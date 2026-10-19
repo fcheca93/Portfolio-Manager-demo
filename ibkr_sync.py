@@ -34,8 +34,8 @@ SNAPSHOT_PATH    = "ibkr_snapshot.json"  # path in repo root
 # Tickers that trade in a non-EUR currency → need FX conversion at sync time.
 # The snapshot stores EUR values directly so the dashboard never needs FX calls.
 TICKER_CURRENCY = {
-    "SIVE":   "SEK",
-    "6315.T": "JPY",  # Tsurumi Mfg — listed on TSE, priced in JPY
+    "DEMOB":  "SEK",  # example: a stock priced in Swedish krona
+    "DEMOJ":  "JPY",  # example: a stock priced in Japanese yen
 }
 
 

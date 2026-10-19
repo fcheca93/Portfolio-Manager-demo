@@ -760,7 +760,7 @@ tr:hover td { background: rgba(79,142,247,0.03); }
   <div class="modal">
     <div class="modal-title">🔓 New Open Position</div>
     <div class="form-grid">
-      <div class="form-group"><label>Ticker / Asset</label><input id="o_ticker" placeholder="e.g. NVDA, SIVE" /></div>
+      <div class="form-group"><label>Ticker / Asset</label><input id="o_ticker" placeholder="e.g. NVDA, SAP" /></div>
       <div class="form-group">
         <label>Strategy</label>
         <select id="o_strategy">
@@ -1430,12 +1430,12 @@ function renderCharts() {
 
 // Currencies that need conversion to EUR — map ticker → currency
 const TICKER_CURRENCY = {
-  'SIVE': 'SEK',
+  'DEMOB': 'SEK',
 };
 
 // Strategy per ticker from IBKR — default 'long', override here for swing positions
 const TICKER_STRATEGY = {
-  'NOKIA': 'swing',
+  'DEMOA': 'swing',
 };
 
 async function fetchEurRate(fromCurrency) {
@@ -1482,7 +1482,7 @@ async function loadIBKRSnapshot() {
     state.openPositions = state.openPositions.filter(p => !p.id?.startsWith('ibkr_'));
 
     // Guard: skip positions where IBKR reports a non-EUR stock as EUR with no fx_rate
-    // (happens with JPY stocks like 6315.T — add them to TICKER_CURRENCY in ibkr_sync.py to fix properly)
+    // (happens with JPY stocks — add them to TICKER_CURRENCY in ibkr_sync.py to fix properly)
     const FX_SANITY_THRESHOLD = 50000;
     const validPositions = data.open_positions.filter(p => {
       if (p.currency === 'EUR' && p.fx_rate === 1.0 && p.avg_entry > 1000) {
