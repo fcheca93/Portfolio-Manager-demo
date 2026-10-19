@@ -1,0 +1,35 @@
+name: IBKR Weekly Sync
+
+on:
+  schedule:
+    # Every Friday at 18:00 ET (23:00 UTC — after US market close)
+    - cron: "0 23 * * 1-5"
+  workflow_dispatch:  # Allow manual trigger from GitHub UI
+
+permissions:
+  contents: write  # needed to commit ibkr_snapshot.json
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run IBKR sync
+        env:
+          IBKR_FLEX_TOKEN:    ${{ secrets.IBKR_FLEX_TOKEN }}
+          IBKR_FLEX_QUERY_ID: ${{ secrets.IBKR_FLEX_QUERY_ID }}
+          GITHUB_TOKEN:       ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY:  ${{ github.repository }}
+        run: python ibkr_sync.py

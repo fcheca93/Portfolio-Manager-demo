@@ -1,0 +1,42 @@
+name: Defense & Aerospace — Intraday Scan
+
+on:
+  schedule:
+    # 09:15 ET = 13:15 UTC (summer EDT)
+    - cron: "15 13 * * 1-5"
+    # 15:45 ET = 19:45 UTC (summer EDT)
+    - cron: "45 19 * * 1-5"
+
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual run"
+        required: false
+        default: "Manual scan requested"
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Defense & Aerospace intraday scan
+        env:
+          PORTFOLIO_ID:      defense_aerospace
+          ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY_DEFENSE }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY_DEFENSE }}
+          FINNHUB_API_KEY:   ${{ secrets.FINNHUB_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TELEGRAM_TOKEN:    ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID:  ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python intraday_scan.py

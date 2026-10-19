@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Mixed Strategy Tracker</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#080c14">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg:       #080c14;
+  --bg2:      #0d1420;
+  --bg3:      #121b2e;
+  --bg4:      #1a2540;
+  --bg5:      #1f2d4a;
+  --border:   rgba(99,140,210,0.12);
+  --border2:  rgba(99,140,210,0.22);
+  --green:    #22d3a0;
+  --green2:   rgba(34,211,160,0.12);
+  --red:      #f05e5d;
+  --red2:     rgba(240,94,93,0.12);
+  --blue:     #4f8ef7;
+  --blue2:    rgba(79,142,247,0.12);
+  --amber:    #f4a535;
+  --amber2:   rgba(244,165,53,0.12);
+  --purple:   #a78bfa;
+  --purple2:  rgba(167,139,250,0.12);
+  --gold:     #e8c46a;
+  --gold2:    rgba(232,196,106,0.12);
+  --radius:   14px;
+  --rsm:      8px;
+  --font-display: 'Open Sans', Arial, sans-serif;
+  --font-mono:    'Open Sans', Arial, sans-serif;
+  --text:     #ffffff;
+  --muted:    #8baad0;
+  --muted2:   #5d7a9e;
+
+  /* Tax constants DE */
+  --tax-rate: 0.26375; /* Kapitalertragsteuer incl. Soli */
+  --freibetrag: 1000;  /* Annual exemption EUR */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 15px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(79,142,247,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79,142,247,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── HEADER ─────────────────────────────────────────────────── */
+.header {
+  background: rgba(8,12,20,0.92);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header-logo { font-family: var(--font-display); font-size: 16px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+.header-logo span { color: var(--gold); }
+.back-btn {
+  font-family: var(--font-mono); font-size: 11px; color: #38bdf8;
+  text-decoration: none; background: rgba(56,189,248,0.08);
+  border: 1px solid rgba(56,189,248,0.25); border-radius: 6px;
+  padding: 4px 8px; letter-spacing: 0.05em;
+  -webkit-tap-highlight-color: transparent;
+}
+.header-right { display: flex; align-items: center; gap: 10px; }
+.badge-de {
+  font-size: 9px; background: var(--amber2); color: var(--amber);
+  border: 1px solid rgba(244,165,53,0.2); border-radius: 4px;
+  padding: 2px 6px; font-family: var(--font-mono); letter-spacing: 0.06em;
+}
+.badge-strategy {
+  font-size: 9px; background: var(--gold2); color: var(--gold);
+  border: 1px solid rgba(232,196,106,0.25); border-radius: 4px;
+  padding: 2px 6px; font-family: var(--font-mono); letter-spacing: 0.06em;
+}
+
+/* ── MAIN ──────────────────────────────────────────────────── */
+.main {
+  position: relative; z-index: 1;
+  max-width: 1100px; margin: 0 auto;
+  padding: 24px 16px 60px;
+}
+
+/* ── SECTION HEADER ─────────────────────────────────────────── */
+.sec-hdr { display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px; }
+.sec-lbl { font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted2); font-weight: 700; }
+.sec-note { font-family: var(--font-display); font-size: 11px; color: var(--muted); }
+
+/* ── SUMMARY CARDS ──────────────────────────────────────────── */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+@media (min-width: 600px) { .summary-grid { grid-template-columns: repeat(5, 1fr); } }
+
+.sum-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+  position: relative; overflow: hidden;
+}
+.sum-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  border-radius: 14px 14px 0 0; background: var(--ac, var(--muted2));
+}
+.sum-label { font-family: var(--font-display); font-size: 11px; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; font-weight: 600; }
+.sum-value { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: #ffffff; line-height: 1; margin-bottom: 4px; }
+.sum-sub { font-family: var(--font-display); font-size: 11px; color: var(--muted); }
+.pos { color: var(--green); }
+.neg { color: var(--red); }
+.gold-c { color: var(--gold); }
+.amber-c { color: var(--amber); }
+
+/* ── TAX BANNER ─────────────────────────────────────────────── */
+.tax-banner {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-left: 3px solid var(--amber); border-radius: var(--radius);
+  padding: 16px 20px; margin-bottom: 24px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 600px) { .tax-banner { grid-template-columns: 1fr 1fr; } }
+.tax-item {}
+.tax-item-label { font-family: var(--font-display); font-size: 11px; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; font-weight: 600; }
+.tax-item-value { font-family: var(--font-display); font-size: 17px; font-weight: 700; }
+.tax-progress-wrap { height: 4px; background: var(--bg4); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.tax-progress-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--green), var(--amber), var(--red)); transition: width 0.6s ease; }
+
+/* ── TABS ────────────────────────────────────────────────────── */
+.tab-bar {
+  display: flex; gap: 2px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 4px;
+  margin-bottom: 20px; width: fit-content;
+}
+.tab-btn {
+  background: transparent; border: none; color: var(--muted);
+  padding: 8px 20px; border-radius: 7px;
+  font-family: var(--font-display); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.tab-btn.active { background: var(--bg4); color: var(--text); border: 1px solid var(--border2); }
+.tab-btn:hover:not(.active) { color: var(--text); }
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── STRATEGY CARDS ─────────────────────────────────────────── */
+.strategy-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin-bottom: 24px;
+}
+@media (max-width: 600px) { .strategy-grid { grid-template-columns: 1fr; } }
+
+.strat-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+  position: relative; overflow: hidden;
+}
+.strat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--ac, var(--muted2));
+}
+.strat-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+.strat-name { font-size: 15px; font-weight: 700; color: #ffffff; }
+.strat-badge {
+  font-family: var(--font-display); font-size: 10px; padding: 3px 9px;
+  border-radius: 10px; border: 1px solid; font-weight: 600;
+}
+.strat-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+@media (max-width: 700px) { .strat-stats { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 500px) { .strat-stats { grid-template-columns: repeat(2, 1fr); } }
+.strat-stat-label { font-family: var(--font-display); font-size: 10px; color: var(--muted); margin-bottom: 2px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.strat-stat-val { font-family: var(--font-display); font-size: 15px; font-weight: 700; }
+
+/* ── TABLE ───────────────────────────────────────────────────── */
+.table-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; margin-bottom: 16px;
+}
+.table-head-row { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.table-title { font-family: var(--font-display); font-size: 13px; font-weight: 600; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  font-family: var(--font-display); font-size: 11px; color: var(--muted);
+  letter-spacing: 0.04em; text-transform: uppercase; font-weight: 700;
+  text-align: right; padding: 13px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap; background: var(--bg3);
+}
+th:first-child { text-align: left; }
+td {
+  padding: 13px 14px; text-align: right;
+  border-bottom: 1px solid rgba(99,140,210,0.07);
+  vertical-align: middle;
+  font-family: var(--font-display); font-size: 13px; color: #ffffff;
+}
+td:first-child { text-align: left; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(79,142,247,0.03); }
+.totals-row td { background: var(--bg3) !important; border-top: 1px solid var(--border2); font-weight: 600; }
+
+/* ── CHIPS ───────────────────────────────────────────────────── */
+.chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 3px 9px; border-radius: 5px;
+  font-family: var(--font-display); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.chip-buy  { background: var(--green2); color: var(--green); border: 1px solid rgba(34,211,160,0.2); }
+.chip-sell { background: var(--red2);   color: var(--red);   border: 1px solid rgba(240,94,93,0.2); }
+.chip-hold { background: var(--blue2);  color: var(--blue);  border: 1px solid rgba(79,142,247,0.2); }
+.chip-quant{ background: var(--gold2);  color: var(--gold);  border: 1px solid rgba(232,196,106,0.2); }
+.chip-swing{ background: var(--purple2);color: var(--purple);border: 1px solid rgba(167,139,250,0.2); }
+.chip-long { background: var(--blue2);  color: var(--blue);  border: 1px solid rgba(79,142,247,0.2); }
+
+/* ── EMPTY STATE ─────────────────────────────────────────────── */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 40px 20px; color: var(--muted);
+  font-family: var(--font-mono); font-size: 11px; gap: 8px;
+  border: 1px dashed var(--border); border-radius: var(--radius);
+  margin-bottom: 16px;
+}
+.empty-icon { font-size: 24px; opacity: 0.4; }
+
+/* ── ADD FORM ────────────────────────────────────────────────── */
+.form-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+}
+.form-title { font-size: 13px; font-weight: 700; margin-bottom: 16px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.form-group label { display: block; font-family: var(--font-display); font-size: 11px; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; font-weight: 600; }
+.form-group input, .form-group select {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border);
+  color: #ffffff; border-radius: var(--rsm); padding: 9px 12px;
+  font-family: var(--font-display); font-size: 13px; outline: none;
+  transition: border-color 0.15s;
+}
+.form-group input:focus, .form-group select:focus { border-color: var(--border2); }
+.form-group select option { background: var(--bg3); }
+.btn-row { display: flex; gap: 8px; }
+.btn {
+  padding: 10px 22px; border-radius: var(--rsm);
+  font-family: var(--font-display); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; border: 1px solid; letter-spacing: 0.02em;
+}
+.btn-primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+.btn-primary:hover { opacity: 0.85; }
+.btn-ghost { background: transparent; border-color: var(--border); color: var(--muted); }
+.btn-ghost:hover { border-color: var(--border2); color: #ffffff; }
+.btn-danger { background: transparent; border-color: rgba(240,94,93,0.3); color: var(--red); font-size: 11px; padding: 4px 10px; }
+.btn-danger:hover { background: var(--red2); }
+
+/* ── CHART CARD ──────────────────────────────────────────────── */
+.chart-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+}
+.chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.chart-title { font-family: var(--font-display); font-size: 13px; font-weight: 600; }
+
+/* ── MODAL ───────────────────────────────────────────────────── */
+.modal-backdrop {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+  z-index: 200; align-items: center; justify-content: center;
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 24px;
+  width: min(480px, 94vw); max-height: 90vh; overflow-y: auto;
+}
+.modal-title { font-size: 15px; font-weight: 700; margin-bottom: 18px; }
+
+/* ── FOOTER ──────────────────────────────────────────────────── */
+.footer {
+  text-align: center; font-family: var(--font-mono); font-size: 9px;
+  color: var(--muted2); padding: 20px; letter-spacing: 0.06em;
+}
+
+/* ── RANGE BUTTONS ───────────────────────────────────────────── */
+.range-bar {
+  display: flex; gap: 2px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 3px;
+}
+.range-btn {
+  background: transparent; border: none; color: var(--muted2);
+  padding: 4px 10px; border-radius: 6px;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  cursor: pointer; transition: all 0.12s; letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.range-btn:hover:not(.active) { color: var(--text); background: var(--bg4); }
+.range-btn.active { background: var(--bg5); color: var(--text); border: 1px solid var(--border2); }
+
+/* ── SCROLLBAR ───────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg5); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <a class="back-btn" href="/">← HUB</a>
+    <div class="header-logo">Mixed <span>Strategy</span></div>
+  </div>
+  <div class="header-right">
+    <span class="badge-de">🇩🇪 DE</span>
+    <span class="badge-strategy">SWING · LONG HOLD</span>
+    <span id="ibkrSyncBadge" style="font-size:9px;font-family:var(--font-mono);color:var(--muted);letter-spacing:0.05em">— IBKR</span>
+    <span id="ibkrSyncTs" style="font-size:9px;font-family:var(--font-mono);color:var(--muted2)"></span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- SUMMARY CARDS -->
+  <div class="sec-hdr" style="margin-bottom:10px">
+    <span class="sec-lbl">Global Summary</span>
+    <span class="sec-note" id="lastSaved" style="font-size:9px"></span>
+  </div>
+
+  <div class="summary-grid">
+    <div class="sum-card" style="--ac: linear-gradient(90deg,#a78bfa,#4f8ef7)">
+      <div class="sum-label">Realized P&amp;L</div>
+      <div class="sum-value" id="sumRealized">€0.00</div>
+      <div class="sum-sub" id="sumRealizedNote">all strategies</div>
+    </div>
+    <div class="sum-card" style="--ac: linear-gradient(90deg,#4f8ef7,#22d3a0)">
+      <div class="sum-label">Unrealized P&amp;L</div>
+      <div class="sum-value" id="sumUnrealized">€0.00</div>
+      <div class="sum-sub">open positions</div>
+    </div>
+    <div class="sum-card" style="--ac: linear-gradient(90deg,#f4a535,#f05e5d)">
+      <div class="sum-label">Est. Tax</div>
+      <div class="sum-value amber-c" id="sumTax">€0.00</div>
+      <div class="sum-sub">26.375% on gains</div>
+    </div>
+    <div class="sum-card" style="--ac: linear-gradient(90deg,#e8c46a,#f4a535)">
+      <div class="sum-label">Freibetrag Used</div>
+      <div class="sum-value gold-c" id="sumFreibetrag">€0 / €1.000</div>
+      <div class="sum-sub" id="sumFreibetragSub">annual DE exemption</div>
+    </div>
+    <div class="sum-card" style="--ac: linear-gradient(90deg,#4f8ef7,#6366f1)">
+      <div class="sum-label">Available Cash</div>
+      <div class="sum-value" id="sumCash">—</div>
+      <div class="sum-sub">uninvested capital</div>
+    </div>
+  </div>
+
+  <!-- PERFORMANCE CHART -->
+  <div class="sec-hdr"><span class="sec-lbl">Performance Over Time</span></div>
+  <div class="chart-card" style="margin-bottom:24px;padding:20px 20px 12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;align-items:center;gap:16px;font-family:var(--font-mono);font-size:10px;color:var(--muted)">
+        <span><span style="display:inline-block;width:10px;height:2px;background:#a78bfa;vertical-align:middle;margin-right:5px;border-radius:1px"></span>Swing</span>
+        <span><span style="display:inline-block;width:10px;height:2px;background:#4f8ef7;vertical-align:middle;margin-right:5px;border-radius:1px"></span>Long Hold</span>
+        <span><span style="display:inline-block;width:10px;height:2px;background:#22d3a0;vertical-align:middle;margin-right:5px;border-radius:1px"></span>Combined</span>
+      </div>
+      <div class="range-bar" id="perfRangeBar">
+        <button class="range-btn" onclick="setPerfRange('1W',this)">1W</button>
+        <button class="range-btn" onclick="setPerfRange('1M',this)">1M</button>
+        <button class="range-btn" onclick="setPerfRange('3M',this)">3M</button>
+        <button class="range-btn" onclick="setPerfRange('6M',this)">6M</button>
+        <button class="range-btn" onclick="setPerfRange('YTD',this)">YTD</button>
+        <button class="range-btn" onclick="setPerfRange('1Y',this)">1Y</button>
+        <button class="range-btn active" onclick="setPerfRange('ALL',this)">ALL</button>
+      </div>
+    </div>
+    <div style="height:220px"><canvas id="perfChart"></canvas></div>
+  </div>
+
+  <!-- STRATEGY OVERVIEW CARDS -->
+  <div class="sec-hdr"><span class="sec-lbl">Strategies</span></div>
+
+  <!-- NEW LAYOUT: left col = Swing + Freibetrag mini-card; right col = Long Hold; bottom row right = Total -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px" id="strategyArea">
+
+    <!-- LEFT COLUMN: Swing + Freibetrag stacked -->
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <!-- Swing -->
+      <div class="strat-card" style="--ac: linear-gradient(90deg,#a78bfa,#6366f1)">
+        <div class="strat-header">
+          <div>
+            <div class="strat-name">⚡ Swing Trading</div>
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:3px">short term · days/weeks</div>
+          </div>
+          <div style="text-align:right">
+            <div class="strat-badge" style="color:var(--purple);background:var(--purple2);border-color:rgba(167,139,250,0.2)">SWING</div>
+            <div id="swingTickerBadge" style="font-size:15px;font-weight:700;color:#ffffff;margin-top:6px;letter-spacing:0.02em">—</div>
+          </div>
+        </div>
+        <div class="strat-stats">
+          <div>
+            <div class="strat-stat-label">Realized</div>
+            <div class="strat-stat-val" id="swingRealized">€0.00</div>
+          </div>
+          <div>
+            <div class="strat-stat-label">Unrealized</div>
+            <div class="strat-stat-val" id="swingUnrealized">€0.00</div>
+          </div>
+          <div>
+            <div class="strat-stat-label">Capital Used</div>
+            <div class="strat-stat-val" id="swingCapital">€0.00</div>
+          </div>
+          <div>
+            <div class="strat-stat-label">% P&amp;L</div>
+            <div class="strat-stat-val" id="swingPnlPct">0.00%</div>
+          </div>
+          <div>
+            <div class="strat-stat-label">Trades</div>
+            <div class="strat-stat-val" id="swingOps">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Freibetrag mini-card -->
+      <div class="strat-card" style="--ac: linear-gradient(90deg,#e8c46a,#f4a535);padding:14px 16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <div class="strat-name" style="font-size:13px">🇩🇪 Freibetrag 2026</div>
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:2px">annual DE capital gains exemption</div>
+          </div>
+          <div class="strat-badge" style="color:var(--gold);background:var(--gold2);border-color:rgba(232,196,106,0.2)">€1.000</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <div class="strat-stat-label">Used</div>
+            <div class="strat-stat-val gold-c" id="freiBetragUsedMini">€0</div>
+          </div>
+          <div>
+            <div class="strat-stat-label">Remaining</div>
+            <div class="strat-stat-val" id="freiBetragLeftMini">€1.000</div>
+          </div>
+          <div>
+            <div class="strat-stat-label">Tax Due</div>
+            <div class="strat-stat-val amber-c" id="freiBetragTaxMini">€0.00</div>
+          </div>
+        </div>
+        <div class="tax-progress-wrap"><div class="tax-progress-fill" id="freiBetragBar" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Long Hold + Total stacked -->
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <!-- Long Hold -->
+      <div class="strat-card" style="--ac: linear-gradient(90deg,#4f8ef7,#22d3a0)">
+        <div class="strat-header">
+          <div>
+            <div class="strat-name">📈 Long Hold</div>
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:3px">long term · months/years</div>
+          </div>
+          <div style="text-align:right">
+            <div class="strat-badge" style="color:var(--blue);background:var(--blue2);border-color:rgba(79,142,247,0.2)">HOLD</div>
+            <div id="longTickerBadge" style="font-size:15px;font-weight:700;color:#ffffff;margin-top:6px;letter-spacing:0.02em">—</div>
+          </div>
+        </div>
+        <div class="strat-stats">
+          <div>
+            <div class="strat-stat-label">Realized</div>
+            <div class="strat-stat-val" id="longRealized">€0.00</div>
+          </div>
+          <div>
+            <div class="strat-stat-label">Unrealized</div>
+            <div class="strat-stat-val" id="longUnrealized">€0.00</div>
+          </div>
+          <div>
+            <div class="strat-stat-label">Capital Used</div>
+            <div class="strat-stat-val" id="longCapital">€0.00</div>
+          </div>
+          <div>
+            <div class="strat-stat-label">% P&amp;L</div>
+            <div class="strat-stat-val" id="longPnlPct">0.00%</div>
+          </div>
+          <div>
+            <div class="strat-stat-label">Shares · FX</div>
+            <div class="strat-stat-val" id="longOps">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total Combined -->
+      <div class="strat-card" style="--ac: linear-gradient(90deg,#22d3a0,#4f8ef7); background:var(--bg3);">
+        <div class="strat-header">
+          <div>
+            <div class="strat-name">📊 Combined Total</div>
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:3px">all strategies</div>
+          </div>
+        </div>
+        <div class="strat-stats">
+          <div>
+            <div class="strat-stat-label">Realized</div>
+            <div class="strat-stat-val pos" id="totalRealized">€0.00</div>
+          </div>
+          <div>
+            <div class="strat-stat-label">Unrealized</div>
+            <div class="strat-stat-val" id="totalUnrealized">€0.00</div>
+          </div>
+          <div>
+            <div class="strat-stat-label">Net P&amp;L</div>
+            <div class="strat-stat-val" id="totalNet">€0.00</div>
+          </div>
+          <div>
+            <div class="strat-stat-label">Portfolio Value</div>
+            <div class="strat-stat-val" id="totalPortfolioValue" style="color:var(--blue)">€0.00</div>
+            <div style="font-size:9px;color:var(--muted);margin-top:2px">P&amp;L + cash</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('transactions',this)">Transactions</button>
+    <button class="tab-btn" onclick="switchTab('open',this)">Open Positions</button>
+    <button class="tab-btn" onclick="switchTab('tax',this)">Tax</button>
+    <button class="tab-btn" onclick="switchTab('charts',this)">Charts</button>
+  </div>
+
+  <!-- ── TAB: TRANSACTIONS ── -->
+  <div class="panel active" id="panel-transactions">
+    <div class="sec-hdr">
+      <span class="sec-lbl">Transaction History</span>
+      <button class="btn btn-primary" onclick="openModal('modalAddTx')" style="font-size:10px;padding:6px 14px">+ Add</button>
+    </div>
+
+    <div id="txEmpty" class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div>No transactions recorded</div>
+      <div style="color:var(--muted2)">Add your first trade</div>
+    </div>
+
+    <div class="table-card" id="txTableWrap" style="display:none">
+      <div class="table-head-row">
+        <div class="table-title">Closed Trades</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)" id="txCount">0 trades</div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticker / Asset</th>
+              <th>Strategy</th>
+              <th>Entry</th>
+              <th>Exit</th>
+              <th>Qty</th>
+              <th>P&amp;L €</th>
+              <th>P&amp;L %</th>
+              <th>Tax</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="txTableBody"></tbody>
+          <tfoot>
+            <tr class="totals-row" id="txTotalsRow"></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: OPEN POSITIONS ── -->
+  <div class="panel" id="panel-open">
+    <div class="sec-hdr">
+      <span class="sec-lbl">Open Positions</span>
+      <button class="btn btn-primary" onclick="openModal('modalAddOpen')" style="font-size:10px;padding:6px 14px">+ Add position</button>
+    </div>
+
+    <div id="openEmpty" class="empty-state">
+      <div class="empty-icon">🔓</div>
+      <div>No open positions</div>
+      <div style="color:var(--muted2)">Record a position you currently hold</div>
+    </div>
+
+    <div class="table-card" id="openTableWrap" style="display:none">
+      <div class="table-head-row">
+        <div class="table-title">Active positions</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)" id="openCount">0 positions</div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticker / Asset</th>
+              <th>Strategy</th>
+              <th>Entry</th>
+              <th>Current Price</th>
+              <th>Qty</th>
+              <th>Invested €</th>
+              <th>Unrealized €</th>
+              <th>Unrealized %</th>
+              <th>Pot. Tax</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="openTableBody"></tbody>
+          <tfoot>
+            <tr class="totals-row" id="openTotalsRow"></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: TAX ── -->
+  <div class="panel" id="panel-tax">
+    <div class="sec-hdr"><span class="sec-lbl">Taxation — Germany</span></div>
+
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-header">
+        <div class="chart-title">Kapitalertragsteuer 2026</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">26.375% (incl. Solidaritätszuschlag)</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px">
+        <div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em">Tax Rate</div>
+          <div style="font-family:var(--font-mono);font-size:18px;color:var(--amber)">26.375%</div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:2px">25% + 5.5% Soli</div>
+        </div>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em">Annual Freibetrag</div>
+          <div style="font-family:var(--font-mono);font-size:18px;color:var(--gold)">€1.000</div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:2px">tax-free exemption</div>
+        </div>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em">Freibetrag Used</div>
+          <div style="font-family:var(--font-mono);font-size:18px;color:var(--text)" id="taxDetailUsed">€0.00</div>
+          <div class="tax-progress-wrap" style="margin-top:6px"><div class="tax-progress-fill" id="taxBarDetail" style="width:0%"></div></div>
+        </div>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em">Est. Tax Due</div>
+          <div style="font-family:var(--font-mono);font-size:18px;color:var(--red)" id="taxDetailDue">€0.00</div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:2px">on realized gains</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-head-row">
+        <div class="table-title">Tax breakdown by strategy</div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Strategy</th>
+              <th>Realized Gains (€)</th>
+              <th>Realized Losses (€)</th>
+              <th>Net Taxable</th>
+              <th>Freibetrag Applied</th>
+              <th>Tax Base</th>
+              <th>Est. Tax</th>
+            </tr>
+          </thead>
+          <tbody id="taxTableBody"></tbody>
+          <tfoot><tr class="totals-row" id="taxTotalsRow"></tr></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="chart-card" style="margin-top:16px;background:rgba(244,165,53,0.04);border-color:rgba(244,165,53,0.2)">
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--amber);letter-spacing:.06em;margin-bottom:10px">⚠ TAX NOTES</div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);line-height:1.7">
+        · This is an estimate — consult a Steuerberater for your official tax return.<br>
+        · The €1.000 Freibetrag applies to capital gains, dividends and interest combined.<br>
+        · Losses (Verluste) offset gains within the same fiscal year.<br>
+        · Use the USD→EUR exchange rate on the trade date for the actual taxable base.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: CHARTS ── -->
+  <div class="panel" id="panel-charts">
+    <div class="overview-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="chart-card">
+        <div class="chart-header"><div class="chart-title">Cumulative P&amp;L (€)</div></div>
+        <div style="height:200px"><canvas id="pnlChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><div class="chart-title">Distribution by Strategy</div></div>
+        <div style="height:200px;display:flex;align-items:center;justify-content:center"><canvas id="stratDonut"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><div class="chart-title">P&amp;L per Trade</div></div>
+      <div style="height:180px"><canvas id="opBar"></canvas></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<div class="footer" id="footerDate">FRONTIER5 HUB · MIXED STRATEGY TRACKER · <span id="footerYear"></span></div>
+
+<!-- ── MODAL: ADD TRANSACTION ── -->
+<div class="modal-backdrop" id="modalAddTx">
+  <div class="modal">
+    <div class="modal-title">➕ New Closed Trade</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Ticker / Asset</label><input id="f_ticker" placeholder="e.g. AAPL, MSFT" /></div>
+      <div class="form-group">
+        <label>Strategy</label>
+        <select id="f_strategy">
+          <option value="swing">⚡ Swing</option>
+          <option value="long">📈 Long Hold</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Entry Date</label><input id="f_entryDate" type="date" /></div>
+      <div class="form-group"><label>Exit Date</label><input id="f_exitDate" type="date" /></div>
+      <div class="form-group"><label>Entry Price (€)</label><input id="f_entryPrice" type="number" step="0.01" placeholder="0.00" /></div>
+      <div class="form-group"><label>Exit Price (€)</label><input id="f_exitPrice" type="number" step="0.01" placeholder="0.00" /></div>
+      <div class="form-group"><label>Quantity / Lots</label><input id="f_qty" type="number" step="0.01" placeholder="1" /></div>
+      <div class="form-group"><label>Fees (€)</label><input id="f_fees" type="number" step="0.01" placeholder="0.00" /></div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px"><label>Notes</label><input id="f_notes" placeholder="optional" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:var(--rsm);padding:8px 10px;font-family:var(--font-mono);font-size:12px;outline:none" /></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="addTransaction()">Save</button>
+      <button class="btn btn-ghost" onclick="closeModal('modalAddTx')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: ADD OPEN POSITION ── -->
+<div class="modal-backdrop" id="modalAddOpen">
+  <div class="modal">
+    <div class="modal-title">🔓 New Open Position</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Ticker / Asset</label><input id="o_ticker" placeholder="e.g. NVDA, SIVE" /></div>
+      <div class="form-group">
+        <label>Strategy</label>
+        <select id="o_strategy">
+          <option value="swing">⚡ Swing</option>
+          <option value="long">📈 Long Hold</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Entry Date</label><input id="o_entryDate" type="date" /></div>
+      <div class="form-group"><label>Entry Price (€)</label><input id="o_entryPrice" type="number" step="0.01" placeholder="0.00" /></div>
+      <div class="form-group"><label>Current Price (€)</label><input id="o_currentPrice" type="number" step="0.01" placeholder="0.00" /></div>
+      <div class="form-group"><label>Quantity / Lots</label><input id="o_qty" type="number" step="0.01" placeholder="1" /></div>
+      <div class="form-group"><label>Fees (€)</label><input id="o_fees" type="number" step="0.01" placeholder="0.00" /></div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px"><label>Notes</label><input id="o_notes" placeholder="optional" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:var(--rsm);padding:8px 10px;font-family:var(--font-mono);font-size:12px;outline:none" /></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="addOpenPosition()">Save</button>
+      <button class="btn btn-ghost" onclick="closeModal('modalAddOpen')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Sends the shared dashboard token (X-Dashboard-Token) with every /api call.
+// The token is asked once and kept in this browser's localStorage.
+function apiFetch(url, opts) {
+  let t = '';
+  try {
+    t = localStorage.getItem('dashboard_token') || '';
+    if (!t) { t = prompt('Dashboard token') || ''; if (t) localStorage.setItem('dashboard_token', t); }
+  } catch (e) {}
+  opts = opts || {};
+  opts.headers = Object.assign({}, opts.headers, {'X-Dashboard-Token': t});
+  return fetch(url, opts).then(function (r) {
+    if (r.status === 401) { try { localStorage.removeItem('dashboard_token'); } catch (e) {} }
+    return r;
+  });
+}
+</script>
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const TAX_RATE   = 0.26375;
+const FREIBETRAG = 1000;
+
+let state = {
+  transactions: [],   // closed trades
+  openPositions: [],  // open positions
+  ibkrCash: null,     // cash from last IBKR sync
+};
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('mixedStrategyState');
+    if (s) state = JSON.parse(s);
+  } catch(e) {}
+}
+function saveState() {
+  try {
+    localStorage.setItem('mixedStrategyState', JSON.stringify(state));
+    document.getElementById('lastSaved').textContent = 'saved ' + new Date().toLocaleTimeString('en-DE');
+  } catch(e) {}
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-backdrop').forEach(m => {
+  m.addEventListener('click', e => { if(e.target === m) m.classList.remove('open'); });
+});
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  btn.classList.add('active');
+  if(name === 'charts') renderCharts();
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function fmt(n, decimals=2) {
+  if(n == null || isNaN(n)) return '—';
+  const sign = n >= 0 ? '' : '-';
+  return sign + '€' + Math.abs(n).toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+function fmtPct(n) {
+  if(n == null || isNaN(n)) return '—';
+  return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+}
+function colorClass(n) { return n > 0 ? 'pos' : n < 0 ? 'neg' : ''; }
+
+function stratLabel(s) {
+  return s === 'swing' ? '<span class="chip chip-swing">SWING</span>'
+       : s === 'long'  ? '<span class="chip chip-long">HOLD</span>'
+       : s;
+}
+
+// ── ADD TRANSACTION ───────────────────────────────────────────────────────────
+function addTransaction() {
+  const ticker    = document.getElementById('f_ticker').value.trim().toUpperCase();
+  const strategy  = document.getElementById('f_strategy').value;
+  const entryDate = document.getElementById('f_entryDate').value;
+  const exitDate  = document.getElementById('f_exitDate').value;
+  const entryPrice= parseFloat(document.getElementById('f_entryPrice').value) || 0;
+  const exitPrice = parseFloat(document.getElementById('f_exitPrice').value) || 0;
+  const qty       = parseFloat(document.getElementById('f_qty').value) || 1;
+  const fees      = parseFloat(document.getElementById('f_fees').value) || 0;
+  const notes     = document.getElementById('f_notes').value;
+
+  if(!ticker || !entryPrice || !exitPrice) {
+    alert('Ticker, precio de entrada y precio de salida son obligatorios.'); return;
+  }
+
+  const grossPnl = (exitPrice - entryPrice) * qty;
+  const netPnl   = grossPnl - fees;
+
+  state.transactions.push({ id: Date.now(), ticker, strategy, entryDate, exitDate, entryPrice, exitPrice, qty, fees, notes, netPnl });
+  saveState(); closeModal('modalAddTx');
+  clearForm(['f_ticker','f_entryDate','f_exitDate','f_entryPrice','f_exitPrice','f_qty','f_fees','f_notes']);
+  render();
+}
+
+// ── ADD OPEN POSITION ─────────────────────────────────────────────────────────
+function addOpenPosition() {
+  const ticker      = document.getElementById('o_ticker').value.trim().toUpperCase();
+  const strategy    = document.getElementById('o_strategy').value;
+  const entryDate   = document.getElementById('o_entryDate').value;
+  const entryPrice  = parseFloat(document.getElementById('o_entryPrice').value) || 0;
+  const currentPrice= parseFloat(document.getElementById('o_currentPrice').value) || 0;
+  const qty         = parseFloat(document.getElementById('o_qty').value) || 1;
+  const fees        = parseFloat(document.getElementById('o_fees').value) || 0;
+  const notes       = document.getElementById('o_notes').value;
+
+  if(!ticker || !entryPrice) {
+    alert('Ticker y precio de entrada son obligatorios.'); return;
+  }
+
+  const invested   = entryPrice * qty;
+  const unrealized = (currentPrice - entryPrice) * qty - fees;
+
+  state.openPositions.push({ id: Date.now(), ticker, strategy, entryDate, entryPrice, currentPrice, qty, fees, notes, invested, unrealized });
+  saveState(); closeModal('modalAddOpen');
+  clearForm(['o_ticker','o_entryDate','o_entryPrice','o_currentPrice','o_qty','o_fees','o_notes']);
+  render();
+}
+
+function clearForm(ids) { ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; }); }
+
+function deleteTransaction(id) {
+  if(!confirm('¿Eliminar esta transacción?')) return;
+  state.transactions = state.transactions.filter(t => t.id !== id);
+  saveState(); render();
+}
+
+function deleteOpenPosition(id) {
+  if(!confirm('¿Eliminar esta posición?')) return;
+  state.openPositions = state.openPositions.filter(p => p.id !== id);
+  saveState(); render();
+}
+
+// ── TAX CALC ──────────────────────────────────────────────────────────────────
+function calcTax(realizedPnl) {
+  // Only positive (gains) are taxable; losses offset gains
+  const taxableBase = Math.max(0, realizedPnl - FREIBETRAG);
+  return taxableBase * TAX_RATE;
+}
+
+function calcTaxBreakdown(strategies) {
+  // Total net gains across strategies (losses offset)
+  const totalRealized = strategies.reduce((a, s) => a + s.realized, 0);
+  const gains   = strategies.reduce((a, s) => a + Math.max(0, s.realized), 0);
+  const losses  = strategies.reduce((a, s) => a + Math.min(0, s.realized), 0);
+  const net     = totalRealized; // losses already reduce gains
+  const frei    = Math.min(FREIBETRAG, Math.max(0, net));
+  const base    = Math.max(0, net - FREIBETRAG);
+  const tax     = base * TAX_RATE;
+  return { gains, losses, net, frei, base, tax };
+}
+
+// ── COMPUTE AGGREGATES ────────────────────────────────────────────────────────
+function compute() {
+  const strategies = ['swing','long'].map(s => {
+    const txs   = state.transactions.filter(t => t.strategy === s);
+    const opens = state.openPositions.filter(p => p.strategy === s);
+    const realized   = txs.reduce((a, t) => a + t.netPnl, 0);
+    const unrealized = opens.reduce((a, p) => a + p.unrealized, 0);
+    
+    // Calculate capital used (invested amount in open positions)
+    const capitalUsed = opens.reduce((a, p) => a + (p.invested || 0), 0);
+    
+    // Calculate % PnL: (realized + unrealized) / capital used * 100
+    const totalPnl = realized + unrealized;
+    const pnlPct = capitalUsed > 0 ? (totalPnl / capitalUsed * 100) : 0;
+    
+    return { 
+      s, 
+      realized, 
+      unrealized, 
+      capitalUsed,
+      pnlPct,
+      txCount: txs.length, 
+      openCount: opens.length 
+    };
+  });
+
+  const totalRealized   = strategies.reduce((a, s) => a + s.realized, 0);
+  const totalUnrealized = strategies.reduce((a, s) => a + s.unrealized, 0);
+  const totalCapitalUsed = strategies.reduce((a, s) => a + s.capitalUsed, 0);
+  const taxBreak        = calcTaxBreakdown(strategies);
+
+  return { strategies, totalRealized, totalUnrealized, totalCapitalUsed, taxBreak };
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render() {
+  const { strategies, totalRealized, totalUnrealized, totalCapitalUsed, taxBreak } = compute();
+
+  // Cash disponible — siempre desde IBKR, nunca calculado
+  const cashEl = document.getElementById('sumCash');
+  if (cashEl) {
+    if (state.ibkrCash != null) {
+      cashEl.textContent = fmt(state.ibkrCash);
+      cashEl.className = 'sum-value ' + colorClass(state.ibkrCash);
+    } else {
+      cashEl.textContent = '—';
+      cashEl.className = 'sum-value';
+    }
+  }
+
+  // Summary cards — all getElementById calls null-checked to prevent render() abort
+  const sumR = document.getElementById('sumRealized');
+  if (sumR) { sumR.textContent = fmt(totalRealized); sumR.className = 'sum-value ' + colorClass(totalRealized); }
+
+  const sumU = document.getElementById('sumUnrealized');
+  if (sumU) { sumU.textContent = fmt(totalUnrealized); sumU.className = 'sum-value ' + colorClass(totalUnrealized); }
+
+  const sumTaxEl = document.getElementById('sumTax');
+  if (sumTaxEl) sumTaxEl.textContent = fmt(taxBreak.tax);
+  const freiBetragUsed = taxBreak.frei;
+  const freiPct = Math.min(100, (freiBetragUsed / FREIBETRAG * 100)).toFixed(0);
+  const sumFreiEl = document.getElementById('sumFreibetrag');
+  if (sumFreiEl) sumFreiEl.textContent = `€${freiBetragUsed.toFixed(0)} / €${FREIBETRAG.toLocaleString()}`;
+
+  // Tax banner — null-checked (legacy IDs, may not exist in current HTML)
+  const taxRealizedEl = document.getElementById('taxRealizedEur');
+  if (taxRealizedEl) { taxRealizedEl.textContent = fmt(taxBreak.net); taxRealizedEl.className = 'tax-item-value ' + colorClass(taxBreak.net); }
+  const taxFreiLeftEl = document.getElementById('taxFreibetragLeft');
+  if (taxFreiLeftEl) taxFreiLeftEl.textContent = fmt(FREIBETRAG - freiBetragUsed);
+  const taxBarEl = document.getElementById('taxBar');
+  if (taxBarEl) taxBarEl.style.width = freiPct + '%';
+  const taxDueEl = document.getElementById('taxDue');
+  if (taxDueEl) taxDueEl.textContent = fmt(taxBreak.tax);
+
+  // Strategy cards
+  strategies.forEach(s => {
+    const r = document.getElementById(s.s + 'Realized');
+    const u = document.getElementById(s.s + 'Unrealized');
+    const c = document.getElementById(s.s + 'Capital');
+    const pct = document.getElementById(s.s + 'PnlPct');
+    const o = document.getElementById(s.s + 'Ops');
+    
+    if(r) { r.textContent = fmt(s.realized); r.className = 'strat-stat-val ' + colorClass(s.realized); }
+    if(u) { u.textContent = fmt(s.unrealized); u.className = 'strat-stat-val ' + colorClass(s.unrealized); }
+    if(c) { c.textContent = fmt(s.capitalUsed); }
+    if(pct) {
+      pct.textContent = fmtPct(s.pnlPct);
+      pct.className = 'strat-stat-val ' + colorClass(s.pnlPct);
+    }
+    if(o) {
+      if(s.s === 'long') {
+        const pos = state.openPositions.find(p => p.strategy === 'long');
+        if(pos) {
+          o.textContent = `${pos.qty.toLocaleString()} shares`;
+          const tb = document.getElementById('longTickerBadge');
+          if(tb) tb.textContent = pos.ticker;
+        } else {
+          o.textContent = '0';
+          const tb = document.getElementById('longTickerBadge');
+          if(tb) tb.textContent = '—';
+        }
+      } else if(s.s === 'swing') {
+        o.textContent = s.txCount;
+        const swingPos = state.openPositions.find(p => p.strategy === 'swing');
+        const sb = document.getElementById('swingTickerBadge');
+        if(sb) sb.textContent = swingPos ? swingPos.ticker : '—';
+      } else {
+        o.textContent = s.txCount;
+      }
+    }
+  });
+
+  document.getElementById('totalRealized').textContent = fmt(totalRealized);
+  document.getElementById('totalRealized').className = 'strat-stat-val ' + colorClass(totalRealized);
+  document.getElementById('totalUnrealized').textContent = fmt(totalUnrealized);
+  document.getElementById('totalUnrealized').className = 'strat-stat-val ' + colorClass(totalUnrealized);
+  const net = totalRealized + totalUnrealized;
+  document.getElementById('totalNet').textContent = fmt(net);
+  document.getElementById('totalNet').className = 'strat-stat-val ' + colorClass(net);
+
+  // Valor Total = market value of open positions + cash + realized P&L already in cash
+  const totalMarketValue = state.openPositions.reduce((a, p) => {
+    if (p.id?.startsWith('ibkr_')) return a + (p.currentPrice * p.qty);
+    return a + ((p.invested || 0) + (p.unrealized || 0));
+  }, 0);
+  const cash = state.ibkrCash || 0;
+  const portfolioValue = totalMarketValue + cash;
+  const pvEl = document.getElementById('totalPortfolioValue');
+  if (pvEl) {
+    pvEl.textContent = fmt(portfolioValue);
+    pvEl.className = 'strat-stat-val ' + colorClass(portfolioValue);
+  }
+
+  // Transactions table
+  renderTxTable();
+  renderOpenTable();
+  renderTaxTable(strategies, taxBreak);
+
+  // Freibetrag mini-card
+  const freiBetragUsedMini = document.getElementById('freiBetragUsedMini');
+  const freiBetragLeftMini = document.getElementById('freiBetragLeftMini');
+  const freiBetragTaxMini  = document.getElementById('freiBetragTaxMini');
+  const freiBetragBar      = document.getElementById('freiBetragBar');
+  if(freiBetragUsedMini) freiBetragUsedMini.textContent = fmt(freiBetragUsed);
+  if(freiBetragLeftMini) freiBetragLeftMini.textContent = fmt(FREIBETRAG - freiBetragUsed);
+  if(freiBetragTaxMini)  freiBetragTaxMini.textContent  = fmt(taxBreak.tax);
+  if(freiBetragBar)      freiBetragBar.style.width = freiPct + '%';
+
+  // Render performance chart
+  renderPerfChart();
+
+  // Tax detail tab
+  const tdu = document.getElementById('taxDetailUsed');
+  if(tdu) tdu.textContent = fmt(freiBetragUsed);
+  const tbd = document.getElementById('taxBarDetail');
+  if(tbd) tbd.style.width = freiPct + '%';
+  const tdd = document.getElementById('taxDetailDue');
+  if(tdd) tdd.textContent = fmt(taxBreak.tax);
+}
+
+function renderTxTable() {
+  const tbody = document.getElementById('txTableBody');
+  const empty = document.getElementById('txEmpty');
+  const wrap  = document.getElementById('txTableWrap');
+  const txs = [...state.transactions].sort((a,b) => {
+    const da = a.exitDate || '', db = b.exitDate || '';
+    return db > da ? 1 : db < da ? -1 : 0;
+  });
+
+  if(txs.length === 0) { empty.style.display='flex'; wrap.style.display='none'; return; }
+  empty.style.display='none'; wrap.style.display='block';
+  document.getElementById('txCount').textContent = txs.length + ' trade' + (txs.length>1?'s':'');
+
+  let totalPnl = 0, totalTax = 0;
+  tbody.innerHTML = txs.map(t => {
+    const pct = ((t.exitPrice - t.entryPrice) / t.entryPrice * 100);
+    const tax = t.netPnl > 0 ? t.netPnl * TAX_RATE : 0;
+    totalPnl += t.netPnl; totalTax += tax;
+    return `<tr>
+      <td><strong>${t.ticker}</strong>${t.notes ? `<br><span style="font-size:9px;color:var(--muted)">${t.notes}</span>` : ''}</td>
+      <td>${stratLabel(t.strategy)}</td>
+      <td>${t.entryDate || '—'}<br><span style="font-size:10px;color:var(--muted)">${fmt(t.entryPrice)}</span></td>
+      <td>${t.exitDate || '—'}<br><span style="font-size:10px;color:var(--muted)">${fmt(t.exitPrice)}</span></td>
+      <td>${t.qty}</td>
+      <td class="${colorClass(t.netPnl)}">${fmt(t.netPnl)}</td>
+      <td class="${colorClass(pct)}">${fmtPct(pct)}</td>
+      <td class="${tax>0?'amber-c':''}">${tax > 0 ? fmt(tax) : '—'}</td>
+      <td><button class="btn btn-danger" onclick="deleteTransaction(${t.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('txTotalsRow').innerHTML = `
+    <td colspan="5" style="text-align:left;font-family:var(--font-mono);font-size:11px">TOTAL (${txs.length} trade${txs.length>1?'s':''})</td>
+    <td class="${colorClass(totalPnl)}">${fmt(totalPnl)}</td>
+    <td></td>
+    <td class="${totalTax>0?'amber-c':''}">${totalTax>0?fmt(totalTax):'—'}</td>
+    <td></td>`;
+}
+
+function renderOpenTable() {
+  const tbody = document.getElementById('openTableBody');
+  const empty = document.getElementById('openEmpty');
+  const wrap  = document.getElementById('openTableWrap');
+  const opens = state.openPositions;
+
+  if(opens.length === 0) { empty.style.display='flex'; wrap.style.display='none'; return; }
+  empty.style.display='none'; wrap.style.display='block';
+  document.getElementById('openCount').textContent = opens.length + ' position' + (opens.length>1?'s':'');
+
+  let totalInvested=0, totalUnrealized=0, totalPotTax=0;
+  tbody.innerHTML = opens.map(p => {
+    const unrealized = (p.currentPrice - p.entryPrice) * p.qty - p.fees;
+    const pct        = ((p.currentPrice - p.entryPrice) / p.entryPrice * 100);
+    const potTax     = unrealized > 0 ? unrealized * TAX_RATE : 0;
+    const invested   = p.entryPrice * p.qty;
+    totalInvested += invested; totalUnrealized += unrealized; totalPotTax += potTax;
+    return `<tr>
+      <td><strong>${p.ticker}</strong>${p.notes ? `<br><span style="font-size:9px;color:var(--muted)">${p.notes}</span>` : ''}</td>
+      <td>${stratLabel(p.strategy)}</td>
+      <td>${p.entryDate || '—'}<br><span style="font-size:10px;color:var(--muted)">${fmt(p.entryPrice)}</span></td>
+      <td>${fmt(p.currentPrice)}</td>
+      <td>${p.qty}</td>
+      <td>${fmt(invested)}</td>
+      <td class="${colorClass(unrealized)}">${fmt(unrealized)}</td>
+      <td class="${colorClass(pct)}">${fmtPct(pct)}</td>
+      <td class="${potTax>0?'amber-c':''}">${potTax > 0 ? fmt(potTax) : '—'}</td>
+      <td><button class="btn btn-danger" onclick="deleteOpenPosition(${p.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('openTotalsRow').innerHTML = `
+    <td colspan="5" style="text-align:left;font-family:var(--font-mono);font-size:11px">TOTAL</td>
+    <td>${fmt(totalInvested)}</td>
+    <td class="${colorClass(totalUnrealized)}">${fmt(totalUnrealized)}</td>
+    <td></td>
+    <td class="${totalPotTax>0?'amber-c':''}">${totalPotTax>0?fmt(totalPotTax):'—'}</td>
+    <td></td>`;
+}
+
+function renderTaxTable(strategies, taxBreak) {
+  const labels = { swing: '⚡ Swing', long: '📈 Long Hold' };
+  let totGains=0, totLosses=0, totNet=0, totFrei=0, totBase=0, totTax=0;
+
+  const rows = strategies.map(s => {
+    const gains   = Math.max(0, s.realized);
+    const losses  = Math.min(0, s.realized);
+    const net     = s.realized;
+    // Freibetrag is applied globally, not per strategy — show partial here
+    const freiFrac= Math.max(0, net) > 0 ? Math.min(FREIBETRAG, Math.max(0, net)) : 0;
+    const base    = Math.max(0, net - freiFrac);
+    const tax     = base * TAX_RATE;
+    totGains+=gains; totLosses+=losses; totNet+=net; totBase+=base; totTax+=tax;
+    return `<tr>
+      <td><strong>${labels[s.s]}</strong></td>
+      <td class="pos">${gains > 0 ? fmt(gains) : '—'}</td>
+      <td class="neg">${losses < 0 ? fmt(losses) : '—'}</td>
+      <td class="${colorClass(net)}">${fmt(net)}</td>
+      <td class="gold-c">${freiFrac > 0 ? fmt(freiFrac) : '—'}</td>
+      <td class="${base>0?'amber-c':''}">${base > 0 ? fmt(base) : '—'}</td>
+      <td class="${tax>0?'amber-c':''}">${tax > 0 ? fmt(tax) : '—'}</td>
+    </tr>`;
+  });
+
+  document.getElementById('taxTableBody').innerHTML = rows.join('');
+  document.getElementById('taxTotalsRow').innerHTML = `
+    <td style="text-align:left;font-family:var(--font-mono);font-size:11px">TOTAL</td>
+    <td class="pos">${totGains>0?fmt(totGains):'—'}</td>
+    <td class="neg">${totLosses<0?fmt(totLosses):'—'}</td>
+    <td class="${colorClass(totNet)}">${fmt(totNet)}</td>
+    <td class="gold-c">${taxBreak.frei>0?fmt(taxBreak.frei):'—'}</td>
+    <td class="${taxBreak.base>0?'amber-c':''}">${taxBreak.base>0?fmt(taxBreak.base):'—'}</td>
+    <td class="${taxBreak.tax>0?'amber-c':''}">${taxBreak.tax>0?fmt(taxBreak.tax):'—'}</td>`;
+}
+
+// ── PERFORMANCE CHART (top of page) ──────────────────────────────────────────
+let perfChart = null;
+let perfRange = 'ALL';
+
+function setPerfRange(range, btn) {
+  perfRange = range;
+  document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderPerfChart();
+}
+
+function getCutoffDate(range) {
+  const now = new Date();
+  if (range === 'ALL') return null;
+  if (range === '1W')  { const d = new Date(now); d.setDate(d.getDate() - 7);   return d; }
+  if (range === '1M')  { const d = new Date(now); d.setMonth(d.getMonth() - 1); return d; }
+  if (range === '3M')  { const d = new Date(now); d.setMonth(d.getMonth() - 3); return d; }
+  if (range === '6M')  { const d = new Date(now); d.setMonth(d.getMonth() - 6); return d; }
+  if (range === '1Y')  { const d = new Date(now); d.setFullYear(d.getFullYear() - 1); return d; }
+  if (range === 'YTD') { return new Date(now.getFullYear(), 0, 1); }
+  return null;
+}
+
+function renderPerfChart() {
+  const ctx = document.getElementById('perfChart');
+  if (!ctx) return;
+
+  const allTxs = [...state.transactions].sort((a,b) => (a.exitDate||'') > (b.exitDate||'') ? 1 : -1);
+  if (perfChart) { perfChart.destroy(); perfChart = null; }
+
+  const today = new Date().toISOString().slice(0,10);
+  const cutoff = getCutoffDate(perfRange);
+
+  // Accumulate baseline P&L before the window
+  let swingBase = 0, longBase = 0, totalBase = 0;
+  if (cutoff) {
+    const cutStr = cutoff.toISOString().slice(0,10);
+    allTxs.forEach(t => {
+      if ((t.exitDate||'') < cutStr) {
+        totalBase += t.netPnl;
+        if (t.strategy === 'swing') swingBase += t.netPnl;
+        else if (t.strategy === 'long') longBase += t.netPnl;
+      }
+    });
+  }
+
+  const txs = cutoff
+    ? allTxs.filter(t => (t.exitDate||'') >= cutoff.toISOString().slice(0,10))
+    : allTxs;
+
+  // Collect all unique sorted dates for category axis
+  const dateSet = new Set();
+  const startDate = cutoff ? cutoff.toISOString().slice(0,10)
+                           : (txs.length > 0 ? (txs[0].exitDate || today) : today);
+  dateSet.add(startDate);
+  txs.forEach(t => { if (t.exitDate) dateSet.add(t.exitDate); });
+  dateSet.add(today);
+  const labels = [...dateSet].sort();
+
+  // Accumulate per-date maps
+  let swingCum = swingBase, longCum = longBase, totalCum = totalBase;
+  const swingMap = { [startDate]: swingBase };
+  const longMap  = { [startDate]: longBase };
+  const totalMap = { [startDate]: totalBase };
+
+  txs.forEach(t => {
+    const d = t.exitDate || today;
+    totalCum += t.netPnl;
+    totalMap[d] = +totalCum.toFixed(2);
+    if (t.strategy === 'swing') {
+      swingCum += t.netPnl;
+      swingMap[d] = +swingCum.toFixed(2);
+    } else if (t.strategy === 'long') {
+      longCum += t.netPnl;
+      longMap[d] = +longCum.toFixed(2);
+    }
+  });
+
+  // Forward-fill each series across all labels
+  let ls = swingBase, ll = longBase, lt = totalBase;
+  const swingVals = [], longVals = [], totalVals = [];
+  labels.forEach(d => {
+    if (swingMap[d] !== undefined) ls = swingMap[d];
+    if (longMap[d]  !== undefined) ll = longMap[d];
+    if (totalMap[d] !== undefined) lt = totalMap[d];
+    swingVals.push(ls);
+    longVals.push(ll);
+    totalVals.push(lt);
+  });
+
+  const tickStyle = { color: '#5d7a9e', font: { family: 'Open Sans', size: 9 }, maxTicksLimit: 8 };
+  const gridStyle = { color: 'rgba(99,140,210,0.06)' };
+
+  perfChart = new Chart(ctx.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Swing',
+          data: swingVals,
+          borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.06)',
+          borderWidth: 2, fill: false, tension: 0.3,
+          pointRadius: labels.length <= 20 ? 3 : 0, pointBackgroundColor: '#a78bfa',
+        },
+        {
+          label: 'Long Hold',
+          data: longVals,
+          borderColor: '#4f8ef7', backgroundColor: 'rgba(79,142,247,0.06)',
+          borderWidth: 2, fill: false, tension: 0.3,
+          pointRadius: labels.length <= 20 ? 3 : 0, pointBackgroundColor: '#4f8ef7',
+        },
+        {
+          label: 'Combined',
+          data: totalVals,
+          borderColor: '#22d3a0', backgroundColor: 'rgba(34,211,160,0.07)',
+          borderWidth: 2.5, fill: true, tension: 0.3,
+          pointRadius: labels.length <= 20 ? 3 : 0, pointBackgroundColor: '#22d3a0',
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(13,20,32,0.95)', borderColor: 'rgba(99,140,210,0.2)',
+          borderWidth: 1, titleColor: '#8baad0', bodyColor: '#ffffff', padding: 10,
+          callbacks: { label: c => ` ${c.dataset.label}: €${c.parsed.y.toFixed(2)}` }
+        }
+      },
+      scales: {
+        x: { ticks: tickStyle, grid: gridStyle },
+        y: { ticks: { ...tickStyle, callback: v => '€' + v }, grid: gridStyle }
+      }
+    }
+  });
+}
+
+// ── CHARTS ────────────────────────────────────────────────────────────────────
+let charts = {};
+function renderCharts() {
+  const txs = [...state.transactions].sort((a,b) => {
+    const da = a.exitDate || '', db = b.exitDate || '';
+    return da > db ? 1 : da < db ? -1 : 0;
+  });
+  const opens = state.openPositions;
+
+  // PnL cumulative
+  const ctx1 = document.getElementById('pnlChart').getContext('2d');
+  if(charts.pnl) charts.pnl.destroy();
+  let cum = 0;
+  const pnlData = txs.map(t => { cum += t.netPnl; return { x: t.exitDate||'', y: +cum.toFixed(2) }; });
+  charts.pnl = new Chart(ctx1, {
+    type: 'line',
+    data: {
+      datasets: [{
+        label: 'Cumulative P&L', data: pnlData, fill: true,
+        borderColor: '#4f8ef7', backgroundColor: 'rgba(79,142,247,0.08)',
+        tension: 0.35, pointRadius: 3, pointBackgroundColor: '#4f8ef7',
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: '#5d7a9e', font: { family: 'Source Code Pro', size: 9 } }, grid: { color: 'rgba(99,140,210,0.07)' } },
+                y: { ticks: { color: '#5d7a9e', font: { family: 'Source Code Pro', size: 9 }, callback: v => '€'+v }, grid: { color: 'rgba(99,140,210,0.07)' } } }
+    }
+  });
+
+  // Donut
+  const ctx2 = document.getElementById('stratDonut').getContext('2d');
+  if(charts.donut) charts.donut.destroy();
+  const swingR = Math.abs(state.transactions.filter(t=>t.strategy==='swing').reduce((a,t)=>a+t.netPnl,0));
+  const longR  = Math.abs([...state.transactions.filter(t=>t.strategy==='long'), ...state.openPositions.filter(p=>p.strategy==='long')].reduce((a,x)=>a+(x.netPnl||x.unrealized||0),0));
+  const total  = swingR + longR || 1;
+  charts.donut = new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+      labels: ['Swing', 'Long Hold'],
+      datasets: [{ data: [swingR/total*100, longR/total*100],
+        backgroundColor: ['rgba(167,139,250,0.8)','rgba(79,142,247,0.8)'],
+        borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: { legend: { position: 'right', labels: { color: '#5d7a9e', font: { family: 'Source Code Pro', size: 10 }, boxWidth: 10, padding: 12 } } }
+    }
+  });
+
+  // Bar per trade
+  const ctx3 = document.getElementById('opBar').getContext('2d');
+  if(charts.bar) charts.bar.destroy();
+  const recent = txs.slice(-20);
+  charts.bar = new Chart(ctx3, {
+    type: 'bar',
+    data: {
+      labels: recent.map(t => t.ticker),
+      datasets: [{
+        label: 'P&L €', data: recent.map(t => +t.netPnl.toFixed(2)),
+        backgroundColor: recent.map(t => t.netPnl >= 0 ? 'rgba(34,211,160,0.7)' : 'rgba(240,94,93,0.7)'),
+        borderRadius: 4,
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: '#5d7a9e', font: { family: 'Source Code Pro', size: 9 } }, grid: { display: false } },
+                y: { ticks: { color: '#5d7a9e', font: { family: 'Source Code Pro', size: 9 }, callback: v => '€'+v }, grid: { color: 'rgba(99,140,210,0.07)' } } }
+    }
+  });
+}
+
+// ── IBKR SNAPSHOT ─────────────────────────────────────────────────────────────
+// Loads the weekly snapshot saved by the GitHub Action (ibkr_sync.py).
+// - Open positions → strategy 'long', valores convertidos a EUR via Frankfurter API
+// - Trades internos de IBKR (lotes de acumulación) → IGNORADOS
+// - Cash → viene en EUR directamente desde IBKR
+
+// Currencies that need conversion to EUR — map ticker → currency
+const TICKER_CURRENCY = {
+  'SIVE': 'SEK',
+};
+
+// Strategy per ticker from IBKR — default 'long', override here for swing positions
+const TICKER_STRATEGY = {
+  'NOKIA': 'swing',
+};
+
+async function fetchEurRate(fromCurrency) {
+  // Uses Frankfurter (free, no key needed) to get EUR rate
+  if (fromCurrency === 'EUR') return 1.0;
+  try {
+    const r = await fetch(`https://api.frankfurter.app/latest?from=${fromCurrency}&to=EUR`);
+    const d = await r.json();
+    return d.rates?.EUR || 1.0;
+  } catch(e) {
+    console.warn(`FX rate fetch failed for ${fromCurrency}:`, e);
+    return 1.0;
+  }
+}
+
+async function loadIBKRSnapshot() {
+  const badge = document.getElementById('ibkrSyncBadge');
+  const ts    = document.getElementById('ibkrSyncTs');
+  try {
+    // Try API endpoint first; fall back to static committed file
+    let res = await apiFetch('/api/ibkr/snapshot');
+    if (!res.ok) {
+      // Fallback: read the file committed directly by ibkr_sync.py
+      res = await fetch('/ibkr_snapshot.json');
+    }
+    const data = await res.json();
+
+    if (!data.ok || !data.open_positions?.length) {
+      if (badge) { badge.textContent = 'No data'; badge.style.color = 'var(--muted)'; }
+      return;
+    }
+
+    // ── Fetch FX rates for all currencies needed ──────────────────────────────
+    const currencies = [...new Set(
+      data.open_positions.map(p => TICKER_CURRENCY[p.ticker] || 'EUR')
+    )];
+    const rates = {};
+    await Promise.all(currencies.map(async c => {
+      rates[c] = await fetchEurRate(c);
+    }));
+
+    // ── Sync open positions → strategy 'long' (converted to EUR) ─────────────
+    // Clear existing IBKR-synced positions before re-syncing
+    state.openPositions = state.openPositions.filter(p => !p.id?.startsWith('ibkr_'));
+
+    // Guard: skip positions where IBKR reports a non-EUR stock as EUR with no fx_rate
+    // (happens with JPY stocks like 6315.T — add them to TICKER_CURRENCY in ibkr_sync.py to fix properly)
+    const FX_SANITY_THRESHOLD = 50000;
+    const validPositions = data.open_positions.filter(p => {
+      if (p.currency === 'EUR' && p.fx_rate === 1.0 && p.avg_entry > 1000) {
+        console.warn(`IBKR: skipping ${p.ticker} — avg_entry=${p.avg_entry} with currency=EUR looks like raw JPY/foreign price. Add to TICKER_CURRENCY in ibkr_sync.py.`);
+        return false;
+      }
+      return true;
+    });
+
+    validPositions.forEach(p => {
+      const currency = TICKER_CURRENCY[p.ticker] || 'EUR';
+      const rate     = rates[currency] || 1.0;
+
+      // Convert all monetary values to EUR
+      const avgEntryEur     = p.avg_entry     * rate;
+      const currentPriceEur = p.current_price * rate;
+      const investedEur     = p.avg_entry * p.qty * rate;
+      const unrealizedEur   = (p.current_price - p.avg_entry) * p.qty * rate;  // recalculated in EUR — avoids IBKR base-currency ambiguity
+      // market_value from IBKR is sometimes 0 — recalculate
+      const marketValueEur  = p.qty * p.current_price * rate;
+
+      state.openPositions.push({
+        id:           'ibkr_' + p.ticker,
+        ticker:       p.ticker,
+        strategy:     TICKER_STRATEGY[p.ticker] || 'long',
+        entryDate:    new Date().toISOString().slice(0, 10),
+        entryPrice:   avgEntryEur,
+        currentPrice: currentPriceEur,
+        qty:          p.qty,
+        fees:         0,
+        notes:        `IBKR sync · ${currency}→EUR @ ${rate.toFixed(4)}`,
+        invested:     investedEur,
+        unrealized:   unrealizedEur,
+        marketValue:  marketValueEur,
+        currency:     currency,
+        fxRate:       rate,
+      });
+    });
+
+    // ── Trades: IGNORAR — son lotes internos de IBKR, no Swing Trading real ──
+    // Cuando tengas Swing Trading real, se añadirá manualmente en el dashboard
+
+    // ── Cash: viene en EUR desde IBKR ────────────────────────────────────────
+    if (data.cash != null) {
+      state.ibkrCash = data.cash;
+    }
+
+    saveState();
+    render();
+
+    // Update sync badge
+    const rateInfo = Object.entries(rates)
+      .filter(([c]) => c !== 'EUR')
+      .map(([c, r]) => `${c}/EUR ${r.toFixed(4)}`)
+      .join(' · ');
+    if (badge) {
+      badge.textContent = `✓ IBKR sync${rateInfo ? ' · ' + rateInfo : ''}`;
+      badge.style.color = 'var(--green)';
+    }
+    if (ts && data.generated_at) {
+      const d = new Date(data.generated_at);
+      ts.textContent = d.toLocaleDateString('en-GB', {
+        weekday: 'short', day: 'numeric', month: 'short',
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+  } catch(e) {
+    console.warn('IBKR snapshot load failed:', e);
+    if (badge) { badge.textContent = 'IBKR offline'; badge.style.color = 'var(--red)'; }
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.getElementById('footerYear').textContent = new Date().getFullYear();
+loadState();
+render();
+loadIBKRSnapshot(); // loads IBKR data on top of localStorage
+</script>
+</body>
+</html>

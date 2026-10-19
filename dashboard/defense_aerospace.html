@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Defense &amp; Aerospace — Frontier5</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#080c14">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&family=Source+Code+Pro:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg:       #080c14;
+  --bg2:      #0d1420;
+  --bg3:      #121b2e;
+  --bg4:      #1a2540;
+  --bg5:      #1f2d4a;
+  --border:   rgba(99,140,210,0.12);
+  --border2:  rgba(99,140,210,0.22);
+  --text:     #e2e8f4;
+  --muted:    #5d7a9e;
+  --muted2:   #3d5070;
+  --green:    #22d3a0;
+  --green2:   rgba(34,211,160,0.12);
+  --red:      #f05e5d;
+  --red2:     rgba(240,94,93,0.12);
+  --blue:     #4f8ef7;
+  --blue2:    rgba(79,142,247,0.12);
+  --amber:    #f4a535;
+  --amber2:   rgba(244,165,53,0.12);
+  --accent:   #22d3a0;  /* defense accent = green (military) */
+  --radius:   14px;
+  --rsm:      8px;
+  --font-display: 'Lato', sans-serif;
+  --font-mono:    'Source Code Pro', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 14px;
+  min-height: 100vh;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(34,211,160,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34,211,160,0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── HEADER ──────────────────────────────────────────────────────────────── */
+.header {
+  background: rgba(8,12,20,0.92);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header-left  { display: flex; align-items: center; gap: 10px; }
+.header-logo  { font-family: var(--font-display); font-size: 16px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+.header-logo span { color: var(--blue); }
+.live-pill {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--green2); border: 1px solid rgba(34,211,160,0.25);
+  border-radius: 20px; padding: 3px 8px;
+  font-family: var(--font-mono); font-size: 9px; color: var(--green); letter-spacing: 0.05em;
+}
+.live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.8)} }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.last-update  { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+.refresh-btn {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--muted);
+  padding: 6px 12px; border-radius: var(--rsm);
+  font-family: var(--font-mono); font-size: 10px; cursor: pointer;
+  transition: all .15s; letter-spacing: .05em;
+}
+.refresh-btn:hover { border-color: var(--border2); color: var(--text); }
+.refresh-btn:active { opacity: .7; }
+
+/* ── GEO BANNER ──────────────────────────────────────────────────────────── */
+.geo-banner {
+  background: rgba(34,211,160,0.04);
+  border-bottom: 1px solid rgba(34,211,160,0.12);
+  padding: 7px 20px;
+  font-family: var(--font-mono); font-size: 10px;
+  color: #5a9a80; letter-spacing: .04em;
+}
+
+/* ── MAIN ────────────────────────────────────────────────────────────────── */
+.main { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 16px 40px; }
+
+/* ── TOP STATS ───────────────────────────────────────────────────────────── */
+.top-stats {
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 12px; padding: 20px 0 16px; align-items: start;
+}
+.stat-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 16px;
+  position: relative; overflow: hidden; transition: border-color .2s;
+}
+.stat-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0; transition: opacity .2s;
+}
+.stat-card:hover { border-color: var(--border2); }
+.stat-card:hover::after { opacity: 1; }
+.stat-card.main-card { background: var(--bg3); }
+.stat-label { font-family: var(--font-mono); font-size: 9px; color: #fff; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+.stat-value { font-family: var(--font-mono); font-size: 22px; font-weight: 500; line-height: 1; letter-spacing: -.01em; color: #fff; }
+.stat-value.main { font-size: 22px; color: #fff; }
+.stat-value-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.stat-pct  { font-family: var(--font-mono); font-size: 12px; font-weight: 400; }
+.stat-sub  { font-family: var(--font-mono); font-size: 10px; margin-top: 3px; color: var(--muted); }
+.range-btn {
+  background: transparent; border: none; color: var(--muted);
+  font-family: var(--font-mono); font-size: 10px; cursor: pointer;
+  padding: 6px 10px; border-radius: 6px; letter-spacing: .04em;
+  transition: all .15s; display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.range-btn:hover { color: var(--text); }
+.range-btn.active { color: var(--text); background: var(--bg4); border: 1px solid var(--border2); }
+.range-btn .range-pct { font-size: 9px; }
+.pos { color: var(--green); } .neg { color: var(--red); } .neu { color: var(--muted); }
+.pos-bg { background: var(--green2); color: var(--green); border: 1px solid rgba(34,211,160,0.2); }
+.neg-bg { background: var(--red2);   color: var(--red);   border: 1px solid rgba(240,94,93,0.2); }
+
+/* ── TABS ────────────────────────────────────────────────────────────────── */
+.tab-bar {
+  display: flex; gap: 2px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 4px;
+  margin-bottom: 20px; width: fit-content;
+}
+.tab-btn {
+  background: transparent; border: none; color: var(--muted);
+  padding: 7px 18px; border-radius: 7px;
+  font-family: var(--font-display); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.tab-btn.active { background: var(--bg4); color: var(--text); border: 1px solid var(--border2); }
+.tab-btn:hover:not(.active) { color: var(--text); }
+.panel { display: none; } .panel.active { display: block; }
+
+/* ── SECTION TITLES ──────────────────────────────────────────────────────── */
+.section-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 14px; letter-spacing: -.01em; }
+.section-sub   { font-family: var(--font-mono); font-size: 10px; color: var(--muted); font-weight: 400; margin-left: 8px; }
+
+/* ── CHART CARD ──────────────────────────────────────────────────────────── */
+.chart-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+}
+.chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.chart-title  { font-family: var(--font-display); font-size: 13px; font-weight: 600; color: var(--text); }
+.chart-wrap   { position: relative; }
+
+/* ── TABLE ───────────────────────────────────────────────────────────────── */
+.table-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  font-family: var(--font-mono); font-size: 9px; color: var(--muted);
+  letter-spacing: .1em; text-transform: uppercase; text-align: right;
+  padding: 12px 16px; border-bottom: 1px solid var(--border); white-space: nowrap;
+  background: var(--bg3);
+}
+th:first-child { text-align: left; }
+td { padding: 14px 16px; text-align: right; border-bottom: 1px solid rgba(99,140,210,0.07); vertical-align: middle; }
+td:first-child { text-align: left; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(34,211,160,0.025); }
+.ticker-chip { display: inline-flex; align-items: center; justify-content: center; padding: 3px 8px; border-radius: 5px; font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: .05em; }
+.sector-tag  { display: inline-block; font-family: var(--font-mono); font-size: 9px; color: var(--muted); background: var(--bg4); padding: 2px 6px; border-radius: 4px; margin-top: 3px; letter-spacing: .04em; }
+.mono { font-family: var(--font-mono); }
+.totals-row td { background: var(--bg3) !important; border-top: 1px solid var(--border2); font-weight: 600; }
+
+/* ── OVERVIEW GRID ───────────────────────────────────────────────────────── */
+.overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.overview-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+
+/* ── GAINERS/LOSERS ──────────────────────────────────────────────────────── */
+.gl-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.gl-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.gl-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(99,140,210,0.07); }
+.gl-row:last-child { border-bottom: none; }
+.gl-bar-wrap { flex: 1; height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden; }
+.gl-bar { height: 100%; border-radius: 2px; transition: width .5s ease; }
+.gl-val  { font-family: var(--font-mono); font-size: 11px; min-width: 50px; text-align: right; }
+.gl-name { font-family: var(--font-mono); font-size: 11px; min-width: 42px; color: var(--muted); }
+
+/* ── PERFORMANCE BARS ────────────────────────────────────────────────────── */
+.perf-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(99,140,210,0.07); }
+.perf-row:last-child { border-bottom: none; }
+.perf-ticker  { font-family: var(--font-mono); font-size: 11px; min-width: 40px; }
+.perf-bar-wrap { flex: 1; height: 6px; background: var(--bg4); border-radius: 3px; overflow: hidden; position: relative; }
+.perf-bar     { height: 100%; border-radius: 3px; transition: width .6s ease; }
+.perf-val     { font-family: var(--font-mono); font-size: 11px; min-width: 55px; text-align: right; }
+
+/* ── DISTRIBUTION DONUT ──────────────────────────────────────────────────── */
+.dist-grid { display: grid; grid-template-columns: 200px 1fr; gap: 20px; align-items: center; }
+.dist-list-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(99,140,210,0.07); }
+.dist-list-item:last-child { border-bottom: none; }
+.dist-dot    { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dist-info   { flex: 1; }
+.dist-ticker { font-family: var(--font-mono); font-size: 11px; font-weight: 500; }
+.dist-sector { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
+.dist-val    { text-align: right; }
+.dist-pct    { font-family: var(--font-mono); font-size: 11px; color: var(--text); }
+
+/* ── RISKS ───────────────────────────────────────────────────────────────── */
+.risk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.risk-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+.risk-name { font-family: var(--font-mono); font-size: 11px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+.risk-note { font-family: var(--font-mono); font-size: 9px; color: var(--muted); margin-bottom: 14px; }
+.risk-bar-wrap  { height: 6px; background: var(--bg4); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+.risk-bar-fill  { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--red), var(--amber), var(--green)); }
+.risk-marker-row { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
+
+/* ── TRANSACTIONS ────────────────────────────────────────────────────────── */
+.tx-row { display: flex; align-items: center; gap: 14px; padding: 12px 20px; border-bottom: 1px solid rgba(99,140,210,0.07); }
+.tx-row:last-child { border-bottom: none; }
+.tx-side { font-family: var(--font-mono); font-size: 9px; letter-spacing: .08em; padding: 3px 7px; border-radius: 4px; min-width: 40px; text-align: center; }
+.tx-buy  { background: var(--green2); color: var(--green); border: 1px solid rgba(34,211,160,0.2); }
+.tx-sell { background: var(--red2);   color: var(--red);   border: 1px solid rgba(240,94,93,0.2); }
+.tx-info   { flex: 1; }
+.tx-ticker { font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
+.tx-detail { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+.tx-val    { text-align: right; font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
+.tx-date   { font-family: var(--font-mono); font-size: 10px; color: var(--muted); min-width: 80px; text-align: right; }
+
+/* ── LOADING / ERROR ─────────────────────────────────────────────────────── */
+.loading-wrap { display: flex; align-items: center; justify-content: center; height: 200px; gap: 10px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.loading-spinner { width: 16px; height: 16px; border: 2px solid var(--bg4); border-top-color: var(--green); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.hidden { display: none !important; }
+.error-banner { background: var(--red2); border: 1px solid rgba(240,94,93,0.25); border-radius: var(--rsm); padding: 10px 16px; font-family: var(--font-mono); font-size: 11px; color: #e08080; margin-bottom: 16px; display: none; }
+.stop-ok     { color: var(--green); }
+.stop-warn   { color: var(--amber); }
+.stop-danger { color: var(--red); }
+
+/* ── RESPONSIVE ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .top-stats { grid-template-columns: 1fr 1fr; }
+  .overview-grid { grid-template-columns: 1fr; }
+  .overview-grid.three { grid-template-columns: 1fr; }
+  .risk-grid { grid-template-columns: 1fr; }
+  .dist-grid { grid-template-columns: 1fr; }
+  .dist-grid canvas { display: none; }
+}
+@media (max-width: 480px) {
+  .top-stats { grid-template-columns: 1fr; }
+  .header-logo { font-size: 14px; }
+}
+.stat-card, .chart-card, .table-card, .gl-card, .risk-card {
+  animation: fadeUp .4s ease both;
+}
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">FRONTIER<span>5</span></div>
+    <a href="/" style="display:flex;align-items:center;font-family:var(--font-mono);font-size:9px;color:#38bdf8;text-decoration:none;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);border-radius:6px;padding:4px 8px;letter-spacing:0.05em;-webkit-tap-highlight-color:transparent">← HUB</a>
+    <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+    <div id="calcBadge" style="display:flex;align-items:center;gap:4px;background:rgba(34,211,160,0.10);border:1px solid rgba(34,211,160,0.25);border-radius:20px;padding:3px 8px;font-family:var(--font-mono);font-size:9px;color:#22d3a0;letter-spacing:0.05em">
+      <span style="width:5px;height:5px;border-radius:50%;background:#22d3a0;flex-shrink:0"></span>
+      <span>FINNHUB</span>
+    </div>
+    <span style="font-family:var(--font-mono);font-size:9px;background:rgba(34,211,160,0.08);color:var(--green);border:1px solid rgba(34,211,160,0.2);border-radius:4px;padding:2px 6px;letter-spacing:0.08em">🛡 DEF/AER</span>
+  </div>
+  <div class="header-right">
+    <div id="marketPill" style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-family:var(--font-mono);font-size:10px;border:1px solid var(--border);background:var(--bg2);white-space:nowrap">
+      <span id="marketDot" style="width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0"></span>
+      <span id="marketLabel" style="color:var(--muted)">—</span>
+      <span id="marketCountdown" style="color:var(--text);font-weight:500">--:--:--</span>
+    </div>
+    <span class="last-update" id="lastUpdate">--:--</span>
+    <button class="refresh-btn" onclick="loadData()">↺ REFRESH</button>
+  </div>
+</div>
+
+<!-- Geo Banner -->
+<div class="geo-banner" id="geoBanner">
+  🛡 Rusia-Ucrania año 3 &nbsp;·&nbsp; Israel-Hamás/Hezbollah activo &nbsp;·&nbsp; China-Taiwan escalada &nbsp;·&nbsp; NATO presupuesto +7% real &nbsp;·&nbsp; Backlog misiles en máximos históricos
+</div>
+
+<div class="main">
+
+  <!-- Loading -->
+  <div class="loading-wrap" id="loading">
+    <div class="loading-spinner"></div>
+    Cargando datos Defense &amp; Aerospace…
+  </div>
+
+  <!-- Error -->
+  <div class="error-banner" id="errorBanner"></div>
+
+  <!-- Top Stats -->
+  <div class="top-stats" id="topStats" style="display:none">
+    <div class="stat-card main-card">
+      <div class="stat-label">Portfolio Value</div>
+      <div class="stat-value main" id="totalValue">—</div>
+      <div style="margin-top:2px">
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)" id="cashSub">$10,000 capital · 7 Abr 2026</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Unrealized Gain</div>
+      <div class="stat-value-row">
+        <span class="stat-value" id="unrealizedVal">—</span>
+        <span class="stat-pct" id="unrealizedPct">—</span>
+      </div>
+      <div class="stat-sub" id="lastDaySub">Last day —</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Daily Change</div>
+      <div class="stat-value-row">
+        <span class="stat-value" id="dailyVal">—</span>
+        <span class="stat-pct" id="dailyPct">—</span>
+      </div>
+      <div class="stat-sub">Cambio hoy (weighted)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Gain</div>
+      <div class="stat-value-row">
+        <span class="stat-value" id="totalGainVal">—</span>
+        <span class="stat-pct" id="totalGainPct">—</span>
+      </div>
+      <div class="stat-sub" id="entryDateSub">Desde apertura</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar" id="tabBar" style="display:none">
+    <button class="tab-btn active" onclick="sw('overview',this)">Overview</button>
+    <button class="tab-btn" onclick="sw('holdings',this)">Holdings</button>
+    <button class="tab-btn" onclick="sw('transactions',this)">Transactions</button>
+    <button class="tab-btn" onclick="sw('analysis',this)">Analysis</button>
+    <button class="tab-btn" onclick="sw('about',this)">Sistema</button>
+  </div>
+
+  <!-- ── OVERVIEW ──────────────────────────────────────────────────────────── -->
+  <div class="panel active" id="tab-overview">
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Portfolio Change</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:3px">
+            <button id="btnValue" onclick="setChartMode('value')" style="background:var(--bg4);border:1px solid var(--border2);color:var(--text);padding:3px 10px;border-radius:4px;font-family:var(--font-mono);font-size:9px;cursor:pointer;letter-spacing:.05em">VALUE</button>
+            <button id="btnPerf"  onclick="setChartMode('perf')"  style="background:transparent;border:none;color:var(--muted);padding:3px 10px;border-radius:4px;font-family:var(--font-mono);font-size:9px;cursor:pointer;letter-spacing:.05em">PERFORMANCE</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:9px;color:var(--muted)">
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:2px;background:#22d3a0;display:inline-block;border-radius:1px"></span>Portfolio</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:2px;background:#4f8ef7;display:inline-block;border-radius:1px"></span>SPX</span>
+          </div>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:200px"><canvas id="lineChart"></canvas></div>
+      <div style="display:flex;justify-content:space-around;padding:14px 8px 2px;border-top:1px solid var(--border);margin-top:12px">
+        <button class="range-btn active" onclick="setRange('1M',this)">1 month</button>
+        <button class="range-btn" onclick="setRange('3M',this)">3 months</button>
+        <button class="range-btn" onclick="setRange('6M',this)">6 months</button>
+        <button class="range-btn" onclick="setRange('YTD',this)">Year to date</button>
+        <button class="range-btn" onclick="setRange('ALL',this)">All time</button>
+      </div>
+    </div>
+
+    <div class="overview-grid">
+      <div class="gl-card">
+        <div class="gl-title">▲ Daily Gainers</div>
+        <div id="gainersList"></div>
+      </div>
+      <div class="gl-card">
+        <div class="gl-title">▼ Daily Losers</div>
+        <div id="losersList"></div>
+      </div>
+    </div>
+
+    <div class="chart-card" id="earningsCard" style="display:none">
+      <div class="chart-header">
+        <div class="chart-title">Upcoming Earnings</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)" id="earningsSubtitle">próximas 30 días</div>
+      </div>
+      <div id="earningsList"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header"><div class="chart-title">Portfolio Distribution</div></div>
+      <div class="dist-grid">
+        <div style="position:relative;height:180px"><canvas id="donutChart"></canvas></div>
+        <div id="distList"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── HOLDINGS ───────────────────────────────────────────────────────────── -->
+  <div class="panel" id="tab-holdings">
+    <div class="table-card">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div class="chart-title">Total Holdings</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">5 positions · $10,000</div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th>Symbol</th><th>Allocation</th><th>Qty</th>
+            <th>Avg Price</th><th>Invested</th><th>Unrealized</th><th>Daily</th><th>Stop</th>
+          </tr></thead>
+          <tbody id="holdingsBody"></tbody>
+          <tfoot id="holdingsFoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TRANSACTIONS ───────────────────────────────────────────────────────── -->
+  <div class="panel" id="tab-transactions">
+    <div class="table-card">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div class="chart-title">Transactions</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">Defense &amp; Aerospace</div>
+      </div>
+      <div id="txList"></div>
+    </div>
+  </div>
+
+  <!-- ── ANALYSIS ───────────────────────────────────────────────────────────── -->
+  <div class="panel" id="tab-analysis">
+
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-header">
+        <div class="chart-title">Holdings Performance <span style="font-size:11px;font-weight:400;color:var(--muted)">(since entry)</span></div>
+      </div>
+      <div id="perfBars"></div>
+    </div>
+
+    <div class="chart-title" style="margin-bottom:14px">Risks</div>
+    <div class="risk-grid" id="riskCards"></div>
+
+    <div class="chart-card" style="margin-top:16px">
+      <div class="chart-header"><div class="chart-title">P&amp;L por Posición ($)</div></div>
+      <div class="chart-wrap" style="height:180px"><canvas id="pnlChart"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header"><div class="chart-title">Cambio Diario (%)</div></div>
+      <div class="chart-wrap" style="height:160px"><canvas id="dayChart"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- ── SISTEMA ─────────────────────────────────────────────────────────────── -->
+  <div class="panel" id="tab-about">
+
+    <div class="chart-card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="font-family:var(--font-display);font-size:18px;font-weight:800;letter-spacing:-.02em">DEFENSE &amp; <span style="color:var(--green)">AEROSPACE</span></div>
+        <span style="font-family:var(--font-mono);font-size:9px;background:var(--green2);color:var(--green);border:1px solid rgba(34,211,160,0.25);border-radius:4px;padding:2px 7px">PORTFOLIO 2</span>
+      </div>
+      <p style="font-family:var(--font-display);font-size:12px;color:rgba(255,255,255,0.85);line-height:1.7">
+        Portafolio concentrado de <b style="color:var(--text)">5 posiciones</b> de alta convicción en defensa y aeroespacial.
+        Tesis: capitalizar el incremento global de presupuestos de defensa ante guerras activas y tensiones geopolíticas.
+        Filosofía: <b style="color:var(--text)">hold puro</b> — solo eventos críticos disparan acción.
+        Inversor en Alemania (Kapitalertragsteuer 26.375%). Capital: <b style="color:var(--text)">$10,000</b>.
+      </p>
+    </div>
+
+    <!-- Tesis por posición -->
+    <div class="chart-title" style="margin-bottom:14px">Tesis de Inversión</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+
+      <div class="chart-card" style="padding:12px 16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <span style="font-family:var(--font-mono);font-size:11px;font-weight:500;background:rgba(34,211,160,0.15);color:#22d3a0;padding:2px 8px;border-radius:4px">RTX 30%</span>
+          <span style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80)">Misiles &amp; Air Defense · Stop −20%</span>
+        </div>
+        <div style="font-family:var(--font-display);font-size:11px;color:rgba(255,255,255,0.85);line-height:1.7">Patriot, AMRAAM, THAAD, Stinger. Backlog $202B. Beneficiario directo de reposición NATO. 4 EPS beats consecutivos. Dividend yield ~2.1%.</div>
+      </div>
+
+      <div class="chart-card" style="padding:12px 16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <span style="font-family:var(--font-mono);font-size:11px;font-weight:500;background:rgba(79,142,247,0.15);color:#4f8ef7;padding:2px 8px;border-radius:4px">LMT 30%</span>
+          <span style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80)">Plataformas &amp; C2 · Stop −20%</span>
+        </div>
+        <div style="font-family:var(--font-display);font-size:11px;color:rgba(255,255,255,0.85);line-height:1.7">F-35 (único caza 5G producción masiva), HIMARS/MLRS, satélites militares. Backlog $160B. 17+ países clientes. FCF yield ~6%.</div>
+      </div>
+
+      <div class="chart-card" style="padding:12px 16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <span style="font-family:var(--font-mono);font-size:11px;font-weight:500;background:rgba(167,139,250,0.15);color:#a78bfa;padding:2px 8px;border-radius:4px">NOC 20%</span>
+          <span style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80)">Próxima Generación · Stop −22%</span>
+        </div>
+        <div style="font-family:var(--font-display);font-size:11px;color:rgba(255,255,255,0.85);line-height:1.7">B-21 Raider (único bombardero furtivo nueva generación), GBSD/Sentinel ICBM. Posición monopolística. P/E ~17×. FCF conversion &gt;90%.</div>
+      </div>
+
+      <div class="chart-card" style="padding:12px 16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <span style="font-family:var(--font-mono);font-size:11px;font-weight:500;background:rgba(244,165,53,0.15);color:#f4a535;padding:2px 8px;border-radius:4px">KTOS 20%</span>
+          <span style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80)">Drones &amp; Hipersónico · Stop −28%</span>
+        </div>
+        <div style="font-family:var(--font-display);font-size:11px;color:rgba(255,255,255,0.85);line-height:1.7">XQ-58 Valkyrie (drone combate táctico asequible). High-beta, mayor upside. Backlog drones en aceleración. EPS positivo desde 2023. ~$3B mkt cap.</div>
+      </div>
+
+    </div>
+
+    <!-- Reglas de decisión -->
+    <div class="chart-title" style="margin-bottom:14px">Reglas de Decisión</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+
+      <div class="chart-card" style="border-color:rgba(240,94,93,0.25)">
+        <div style="font-family:var(--font-mono);font-size:10px;font-weight:500;color:var(--red);margin-bottom:10px;letter-spacing:.05em">🔴 SALIDA OBLIGATORIA</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text);margin-bottom:6px;font-weight:500">Stop-Loss — Venta 100% inmediata</div>
+        <div style="font-family:var(--font-display);font-size:11px;color:rgba(255,255,255,0.85);line-height:1.7;margin-bottom:12px">Sin excepciones. Sin "esperar a que recupere". Ejecuta el mismo día.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+          <div style="font-family:var(--font-mono);font-size:9px;background:var(--bg3);padding:5px 8px;border-radius:5px">RTX −20%</div>
+          <div style="font-family:var(--font-mono);font-size:9px;background:var(--bg3);padding:5px 8px;border-radius:5px">LMT −20%</div>
+          <div style="font-family:var(--font-mono);font-size:9px;background:var(--bg3);padding:5px 8px;border-radius:5px">NOC −22%</div>
+          <div style="font-family:var(--font-mono);font-size:9px;background:var(--bg3);padding:5px 8px;border-radius:5px">KTOS −28%</div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text);margin-top:12px;margin-bottom:6px;font-weight:500">Tesis Rota — Salida en 1-2 días</div>
+        <div style="font-family:var(--font-display);font-size:11px;color:rgba(255,255,255,0.85);line-height:1.7">Corte masivo presupuesto defensa EEUU, cancelación programa clave (F-35, B-21, Patriot), o pérdida de contrato DoD &gt;30% revenue.</div>
+      </div>
+
+      <div class="chart-card" style="border-color:rgba(34,211,160,0.2)">
+        <div style="font-family:var(--font-mono);font-size:10px;font-weight:500;color:var(--green);margin-bottom:10px;letter-spacing:.05em">🟢 NUNCA VENDER</div>
+        <div style="font-family:var(--font-display);font-size:11px;color:rgba(255,255,255,0.85);line-height:1.7;margin-bottom:10px">Rumores de paz/alto el fuego sin acuerdo firmado. Debate presupuestario sin resolución. Downgrade analista sin cambio fundamental.</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text);margin-bottom:6px;font-weight:500">Señal de paz = oportunidad</div>
+        <div style="font-family:var(--font-display);font-size:11px;color:rgba(255,255,255,0.85);line-height:1.7">Post-guerra: ciclo de reposición de stocks militares dura 2-3 años. Múltiples conflictos activos = cualquier "paz" es parcial.</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text);margin-top:10px;margin-bottom:6px;font-weight:500">Escalación = añadir RTX/LMT</div>
+        <div style="font-family:var(--font-display);font-size:11px;color:rgba(255,255,255,0.85);line-height:1.7">Excepción DCA: evento escalación geopolítica permite compra inmediata de RTX/LMT sin esperar RSI/EMA.</div>
+      </div>
+
+    </div>
+
+    <!-- Stack técnico -->
+    <div class="chart-title" style="margin-bottom:14px">Stack Técnico</div>
+    <div class="chart-card">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div>
+          <div style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80);letter-spacing:.08em;margin-bottom:6px">BROKER</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text)">Alpaca Paper</div>
+          <div style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80)">Ejecución automática</div>
+        </div>
+        <div>
+          <div style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80);letter-spacing:.08em;margin-bottom:6px">DATOS</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text)">Finnhub</div>
+          <div style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80)">Precios · News · Fundamentals</div>
+        </div>
+        <div>
+          <div style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80);letter-spacing:.08em;margin-bottom:6px">IA</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text)">Claude Sonnet</div>
+          <div style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80)">Análisis y alertas</div>
+        </div>
+        <div>
+          <div style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80);letter-spacing:.08em;margin-bottom:6px">HOSTING</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text)">Render + GitHub Actions</div>
+          <div style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80)">Always-on + Scheduled</div>
+        </div>
+        <div>
+          <div style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80);letter-spacing:.08em;margin-bottom:6px">ALERTAS</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text)">Telegram</div>
+          <div style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80)">Botones YES/NO · Ejecución</div>
+        </div>
+        <div>
+          <div style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80);letter-spacing:.08em;margin-bottom:6px">FISCAL</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text)">Alemania · DE</div>
+          <div style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.80)">KeSt 26.375% · Freibetrag €1K</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /main -->
+
+<script>
+// Sends the shared dashboard token (X-Dashboard-Token) with every /api call.
+// The token is asked once and kept in this browser's localStorage.
+function apiFetch(url, opts) {
+  let t = '';
+  try {
+    t = localStorage.getItem('dashboard_token') || '';
+    if (!t) { t = prompt('Dashboard token') || ''; if (t) localStorage.setItem('dashboard_token', t); }
+  } catch (e) {}
+  opts = opts || {};
+  opts.headers = Object.assign({}, opts.headers, {'X-Dashboard-Token': t});
+  return fetch(url, opts).then(function (r) {
+    if (r.status === 401) { try { localStorage.removeItem('dashboard_token'); } catch (e) {} }
+    return r;
+  });
+}
+</script>
+<script>
+// ── Portfolio config ────────────────────────────────────────────────────────────
+// ── Visual metadata only — entries/shares come from Alpaca ──────────────────
+const TICKER_META = {
+  RTX:  { name:"Raytheon",   sector:"Misiles/Air Def",  color:"#22d3a0", stopPct:0.20 },
+  LMT:  { name:"Lockheed",   sector:"Plataformas/C2",   color:"#4f8ef7", stopPct:0.18 },
+  LHX:  { name:"L3Harris",   sector:"Electrónica/ISR",  color:"#f4a535", stopPct:0.18 },
+  HII:  { name:"Huntington", sector:"Naval/Submarinos", color:"#a78bfa", stopPct:0.20 },
+  KTOS: { name:"Kratos",     sector:"Drones/Hipersón.", color:"#f05e5d", stopPct:0.25 },
+};
+const INITIAL_CAP  = 10000.00;
+const ENTRY_DATE   = "2026-04-07";
+
+let pos = [];
+let charts = {};
+let portfolioHistory = [];
+let historicalData   = [];
+
+// ── Load historical data once on page start ──────────────────────────────────
+async function loadHistory() {
+  try {
+    const r = await apiFetch('/api/history/defense');
+    const d = await r.json();
+    if (d.ok && d.history && d.history.length > 1) historicalData = d.history;
+  } catch(e) {}
+}
+
+// ── Fetch — fully dynamic from Alpaca positions ───────────────────────────────
+async function loadData() {
+  try {
+    const [aR, pR, eR] = await Promise.all([
+      apiFetch('/api/account/defense-full').catch(() => null),
+      apiFetch('/api/positions/defense-full').catch(() => null),
+      apiFetch('/api/earnings/defense').catch(() => null),
+    ]);
+
+    if (!pR) throw new Error('No positions endpoint');
+    const pD = await pR.json();
+    if (!pD.ok) throw new Error(pD.error || 'Positions error');
+    const alpacaPos = pD.positions || [];
+    if (alpacaPos.length === 0) throw new Error('No positions in Alpaca account');
+
+    // Alpaca account
+    let alpacaAccount = null;
+    if (aR) { try { const ad = await aR.json(); if (ad.ok) alpacaAccount = ad.account; } catch(e){} }
+
+    // Fetch live quotes for current positions
+    const tickers = alpacaPos.map(p => p.ticker);
+    const qR = await apiFetch('/api/quotes?tickers=' + tickers.join(','));
+    const qD = await qR.json().catch(() => ({ ok: false, quotes: {} }));
+    const quotes = qD.quotes || {};
+
+    pos = alpacaPos.map(ap => {
+      const meta = TICKER_META[ap.ticker] || { name:ap.ticker, sector:'Unknown', color:'#5d7a9e', stopPct:0.20 };
+      const q         = quotes[ap.ticker] || {};
+      const price     = ap.current_price || q.c || ap.avg_entry;
+      const prev      = q.pc || ap.avg_entry;
+      const dayChgPct = prev ? ((price - prev) / prev * 100) : 0;
+      const stopLevel = ap.avg_entry * (1 - meta.stopPct);
+      const distStop  = price ? ((price - stopLevel) / price * 100) : 99;
+      return {
+        ticker: ap.ticker, name: meta.name, sector: meta.sector, color: meta.color,
+        stopPct: meta.stopPct, shares: ap.qty, entry: ap.avg_entry,
+        price, prev, dayChgPct, dayChgUSD: ap.pl_today,
+        pnlUSD: ap.pl_total, pnlPct: ap.pl_total_pct,
+        value: ap.market_value, costBasis: ap.avg_entry * ap.qty,
+        stopLevel, distStop, stopNear: distStop < 3.0, alpacaLive: true, weight: 0,
+      };
+    });
+
+    // Recalculate weights from actual values
+    const totalVal = pos.reduce((s, p) => s + p.value, 0);
+    pos.forEach(p => { p.weight = totalVal ? p.value / totalVal : 0; });
+
+    updateHistory();
+
+    if (eR) {
+      try {
+        const ed = await eR.json();
+        if (ed.ok && ed.earnings && ed.earnings.length) renderUpcomingEarnings(ed.earnings);
+      } catch(e) {}
+    }
+
+    render();
+    document.getElementById('lastUpdate').textContent =
+      new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) + ' ET';
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('topStats').style.display = '';
+    document.getElementById('tabBar').style.display   = '';
+    document.getElementById('errorBanner').style.display = 'none';
+
+  } catch(e) {
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('topStats').style.display = '';
+    document.getElementById('tabBar').style.display   = '';
+    const eb = document.getElementById('errorBanner');
+    eb.textContent = 'Error cargando posiciones desde Alpaca: ' + e.message;
+    eb.style.display = 'block';
+  }
+}
+
+function calc(p, price, prev) {
+  // Legacy compatibility
+  const dayChgPct = prev ? ((price - prev) / prev * 100) : 0;
+  const stopLevel = (p.entry||price) * (1 - (p.stopPct||0.20));
+  const distStop  = price ? ((price - stopLevel) / price * 100) : 99;
+  return { ...p, price, prev, dayChgPct, dayChgUSD: 0,
+           pnlUSD: 0, pnlPct: 0, value: price*(p.shares||0),
+           costBasis: (p.entry||price)*(p.shares||0),
+           stopLevel, distStop, stopNear: distStop < 3.0 };
+}
+
+function updateHistory() {
+  const tVal = pos.reduce((s,p) => s+p.value, 0);
+  const now  = new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  portfolioHistory.push({ t: now, v: tVal });
+  if (portfolioHistory.length > 20) portfolioHistory.shift();
+}
+
+// ── Formatters ──────────────────────────────────────────────────────────────────
+const $f   = v => (v < 0 ? '-$' : '+$') + Math.abs(v).toFixed(2);
+const $fn  = v => '$' + Math.abs(v).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct  = v => (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+const cc   = v => v > 0 ? 'pos' : v < 0 ? 'neg' : 'neu';
+
+// ── Render ──────────────────────────────────────────────────────────────────────
+function render() {
+  const tVal  = pos.reduce((s,p) => s+p.value, 0);
+  const tCost = pos.reduce((s,p) => s+p.costBasis, 0);
+  const tPnl  = pos.reduce((s,p) => s+p.pnlUSD, 0);
+  const tDay  = pos.reduce((s,p) => s+p.dayChgUSD, 0);
+  const tDayP = pos.reduce((s,p) => s+(p.dayChgPct*p.weight), 0);
+  const tPnlP = tCost ? tPnl/tCost*100 : 0;
+
+  document.getElementById('totalValue').textContent    = $fn(tVal);
+  document.getElementById('unrealizedVal').innerHTML   = `<span class="${cc(tPnl)}">${$f(tPnl)}</span>`;
+  document.getElementById('unrealizedPct').innerHTML   = `<span class="${cc(tPnl)}">${pct(tPnlP)}</span>`;
+  document.getElementById('lastDaySub').textContent    = `Last day ${tDay >= 0?'+':''}${$f(tDay).replace(/^\+/,'')}`;
+  document.getElementById('dailyVal').innerHTML        = `<span class="${cc(tDay)}">${$f(tDay)}</span>`;
+  document.getElementById('dailyPct').innerHTML        = `<span class="${cc(tDay)}">${pct(tDayP)}</span>`;
+  document.getElementById('totalGainVal').innerHTML    = `<span class="${cc(tPnl)}">${$f(tPnl)}</span>`;
+  document.getElementById('totalGainPct').innerHTML    = `<span class="${cc(tPnl)}">${pct(tPnlP)}</span>`;
+  document.getElementById('entryDateSub').textContent  = `Desde ${ENTRY_DATE}`;
+
+  renderOverview(tVal, tPnl, tDay);
+  renderHoldings(tVal, tCost, tPnl, tDay, tDayP);
+  renderTransactions();
+  renderAnalysis(tVal, tPnl);
+}
+
+// ── Upcoming Earnings ──────────────────────────────────────────────────────────
+function renderUpcomingEarnings(earnings) {
+  const card = document.getElementById('earningsCard');
+  const list = document.getElementById('earningsList');
+  if (!card || !list || !earnings.length) return;
+  const colors = { RTX:'#22d3a0', LMT:'#4f8ef7', NOC:'#a78bfa', KTOS:'#f4a535' };
+  list.innerHTML = earnings.map(e => {
+    const urgency = e.days_until <= 1 ? 'var(--red)' : e.days_until <= 2 ? 'var(--amber)' : 'var(--muted)';
+    const color   = colors[e.ticker] || 'var(--blue)';
+    const timing  = e.timing === 'pre' ? '🌅 Pre-market' : '🌆 After-market';
+    const daysText = e.days_until === 0 ? 'HOY' : e.days_until === 1 ? 'MAÑANA' : `en ${e.days_until} días`;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="font-family:var(--font-mono);font-size:11px;font-weight:500;background:${color}20;color:${color};padding:2px 8px;border-radius:4px;min-width:46px;text-align:center">${e.ticker}</span>
+      <div style="flex:1">
+        <div style="font-family:var(--font-display);font-size:12px;color:var(--text)">${e.name}</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:2px">${timing} · ${e.date}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:var(--font-mono);font-size:11px;font-weight:500;color:${urgency}">${daysText}</div>
+        ${e.eps_est ? `<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">EPS est. $${e.eps_est}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  const items = list.querySelectorAll('div[style*="border-bottom"]');
+  if (items.length) items[items.length-1].style.borderBottom = 'none';
+  card.style.display = '';
+  document.getElementById('earningsSubtitle').textContent = `${earnings.length} próximo${earnings.length > 1 ? 's' : ''}`;
+}
+
+// ── Range / Chart mode ─────────────────────────────────────────────────────────
+let currentRange = '1M', chartMode = 'value', spxHistory = [];
+
+async function fetchSpxToday() {
+  try {
+    const r = await apiFetch('/api/spy');
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.ok && d.pct !== undefined) {
+      const t = new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+      if (spxHistory.length && spxHistory[spxHistory.length-1].t === t)
+        spxHistory[spxHistory.length-1].pct = d.pct;
+      else spxHistory.push({ t, pct: d.pct });
+      if (spxHistory.length > 20) spxHistory.shift();
+    }
+  } catch(e) {}
+}
+
+function setRange(r, el) {
+  currentRange = r;
+  document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const tVal = pos.reduce((s,p)=>s+p.value,0);
+  const tPnl = pos.reduce((s,p)=>s+p.pnlUSD,0);
+  const tDay = pos.reduce((s,p)=>s+p.dayChgUSD,0);
+  renderLineChart(tVal, tPnl, tDay);
+}
+
+function setChartMode(mode) {
+  chartMode = mode;
+  const bV = document.getElementById('btnValue'), bP = document.getElementById('btnPerf');
+  if (mode === 'value') {
+    bV.style.background='var(--bg4)'; bV.style.border='1px solid var(--border2)'; bV.style.color='var(--text)';
+    bP.style.background='transparent'; bP.style.border='none'; bP.style.color='var(--muted)';
+  } else {
+    bP.style.background='var(--bg4)'; bP.style.border='1px solid var(--border2)'; bP.style.color='var(--text)';
+    bV.style.background='transparent'; bV.style.border='none'; bV.style.color='var(--muted)';
+  }
+  const tVal=pos.reduce((s,p)=>s+p.value,0), tPnl=pos.reduce((s,p)=>s+p.pnlUSD,0), tDay=pos.reduce((s,p)=>s+p.dayChgUSD,0);
+  renderLineChart(tVal, tPnl, tDay);
+}
+
+function renderLineChart(tVal, tPnl, tDay) {
+  const tc='rgba(255,255,255,0.75)', gc='rgba(79,142,247,0.08)';
+  const isP  = chartMode === 'perf';
+  const useHistorical = historicalData.length > 1;
+  const useIntraday   = !useHistorical && portfolioHistory.length > 1;
+  let labels, portData;
+  if (useHistorical) {
+    const hist = [...historicalData];
+    hist[hist.length-1] = { date: hist[hist.length-1].date, value: tVal };
+    labels   = hist.map(h=>h.date);
+    portData = isP ? hist.map(h=>+((h.value-INITIAL_CAP)/INITIAL_CAP*100).toFixed(3)) : hist.map(h=>h.value);
+  } else if (useIntraday) {
+    labels   = portfolioHistory.map(h=>h.t);
+    portData = isP ? portfolioHistory.map(h=>+((h.v-INITIAL_CAP)/INITIAL_CAP*100).toFixed(3)) : portfolioHistory.map(h=>h.v);
+  } else {
+    labels   = ['Entrada','Ahora'];
+    portData = isP ? [0, +((tVal-INITIAL_CAP)/INITIAL_CAP*100).toFixed(3)] : [INITIAL_CAP, tVal];
+  }
+  const spxData = isP && spxHistory.length > 0
+    ? labels.map((_,i) => spxHistory[i] ? +spxHistory[i].pct.toFixed(3) : (spxHistory[spxHistory.length-1]?.pct||0))
+    : null;
+  const color = tPnl >= 0 ? '#22d3a0' : '#f05e5d';
+  const datasets = [{
+    label:'Portfolio', data:portData, borderColor:color, borderWidth:2, fill:true,
+    backgroundColor:tPnl>=0?'rgba(34,211,160,0.07)':'rgba(240,94,93,0.07)',
+    tension:.4, pointRadius:0, pointHoverRadius:4,
+  }];
+  if (isP && spxData) datasets.push({
+    label:'SPX', data:spxData, borderColor:'#4f8ef7', borderWidth:1.5, fill:false,
+    backgroundColor:'transparent', tension:.4, pointRadius:0, pointHoverRadius:4, borderDash:[4,3],
+  });
+  if (charts.line) charts.line.destroy();
+  charts.line = new Chart(document.getElementById('lineChart'), {
+    type:'line', data:{labels,datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>isP?` ${c.dataset.label}: ${c.parsed.y>=0?'+':''}${c.parsed.y.toFixed(2)}%`:` ${$fn(c.parsed.y)}`}}},
+      scales:{
+        x:{ticks:{color:tc,font:{size:10,family:'Source Code Pro'}},grid:{color:gc}},
+        y:{ticks:{color:tc,font:{size:10,family:'Source Code Pro'},callback:v=>isP?(v>=0?'+':'')+v.toFixed(2)+'%':'$'+v.toFixed(0)},grid:{color:gc}},
+      }
+    }
+  });
+}
+
+// ── Market clock ───────────────────────────────────────────────────────────────
+function getETOffset(){const n=new Date(),y=n.getUTCFullYear(),m=new Date(Date.UTC(y,2,1)),s=new Date(Date.UTC(y,2,8+(7-m.getUTCDay())%7,7)),v=new Date(Date.UTC(y,10,1)),e=new Date(Date.UTC(y,10,1+(7-v.getUTCDay())%7,6));return(n>=s&&n<e)?4:5;}
+function nowET(){return new Date(Date.now()-getETOffset()*3600000);}
+function fmtCD(ms){if(ms<=0)return'00:00:00';const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;}
+function nextOpenUTC(et){const o=getETOffset();let c=new Date(Date.UTC(et.getUTCFullYear(),et.getUTCMonth(),et.getUTCDate(),9+o,30,0));if(et>=c)c=new Date(c.getTime()+86400000);while([0,6].includes(new Date(c.getTime()).getUTCDay()))c=new Date(c.getTime()+86400000);return c;}
+function nextCloseUTC(et){const o=getETOffset();return new Date(Date.UTC(et.getUTCFullYear(),et.getUTCMonth(),et.getUTCDate(),16+o,0,0));}
+function updateMarketClock(){
+  const now=new Date(),et=nowET(),o=getETOffset(),d=et.getUTCDay(),h=et.getUTCHours(),m=et.getUTCMinutes(),t=h*60+m;
+  const wd=d>=1&&d<=5,open=wd&&t>=9*60+30&&t<16*60,pre=wd&&t<9*60+30;
+  const dot=document.getElementById('marketDot'),lbl=document.getElementById('marketLabel'),cd=document.getElementById('marketCountdown');
+  if(!dot)return;
+  if(open){dot.style.background='#22d3a0';dot.style.boxShadow='0 0 6px #22d3a0';lbl.style.color='#22d3a0';lbl.textContent='Mercado abierto ·';cd.style.color='#22d3a0';cd.textContent=fmtCD(nextCloseUTC(et).getTime()-now.getTime());}
+  else if(pre){dot.style.background='#f4a535';dot.style.boxShadow='0 0 6px #f4a535';lbl.style.color='#f4a535';lbl.textContent='Pre-market ·';cd.style.color='#f4a535';const op=new Date(Date.UTC(et.getUTCFullYear(),et.getUTCMonth(),et.getUTCDate(),9+o,30,0));cd.textContent=fmtCD(op.getTime()-now.getTime());}
+  else{dot.style.background='#f05e5d';dot.style.boxShadow='none';lbl.style.color='var(--muted)';lbl.textContent='Mercado cerrado ·';cd.style.color='var(--text)';cd.textContent=fmtCD(nextOpenUTC(et).getTime()-now.getTime());}
+}
+setInterval(updateMarketClock,1000);
+updateMarketClock();
+
+// ── Overview ────────────────────────────────────────────────────────────────────
+function renderOverview(tVal, tPnl, tDay) {
+  fetchSpxToday();
+  renderLineChart(tVal, tPnl, tDay);
+
+  // Gainers / Losers
+  const sorted  = [...pos].sort((a,b)=>b.dayChgPct-a.dayChgPct);
+  const gainers = sorted.filter(p=>p.dayChgPct>=0);
+  const losers  = sorted.filter(p=>p.dayChgPct<0).reverse();
+  const maxAbs  = Math.max(...pos.map(p=>Math.abs(p.dayChgPct)),0.01);
+  document.getElementById('gainersList').innerHTML = (gainers.length?gainers:[{ticker:'—',dayChgPct:0}]).map(p=>`
+    <div class="gl-row">
+      <span class="gl-name">${p.ticker}</span>
+      <div class="gl-bar-wrap"><div class="gl-bar" style="width:${Math.abs(p.dayChgPct)/maxAbs*100}%;background:var(--green)"></div></div>
+      <span class="gl-val pos">${p.dayChgPct>0?'+':''}${p.dayChgPct.toFixed(2)}%</span>
+    </div>`).join('');
+  document.getElementById('losersList').innerHTML = (losers.length?losers:[{ticker:'—',dayChgPct:0}]).map(p=>`
+    <div class="gl-row">
+      <span class="gl-name">${p.ticker}</span>
+      <div class="gl-bar-wrap"><div class="gl-bar" style="width:${Math.abs(p.dayChgPct)/maxAbs*100}%;background:var(--red)"></div></div>
+      <span class="gl-val neg">${p.dayChgPct.toFixed(2)}%</span>
+    </div>`).join('');
+
+  // Donut
+  if (charts.donut) charts.donut.destroy();
+  charts.donut = new Chart(document.getElementById('donutChart'), {
+    type:'doughnut',
+    data:{labels:pos.map(p=>p.ticker),datasets:[{data:pos.map(p=>+(p.value).toFixed(2)),backgroundColor:pos.map(p=>p.color+'cc'),borderColor:pos.map(p=>p.color),borderWidth:1.5}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: $${c.parsed.toFixed(0)} (${(c.parsed/pos.reduce((s,p)=>s+p.value,0)*100).toFixed(1)}%)`}}}}
+  });
+  const tVal2=pos.reduce((s,p)=>s+p.value,0);
+  document.getElementById('distList').innerHTML=pos.map(p=>`
+    <div class="dist-list-item">
+      <div class="dist-dot" style="background:${p.color}"></div>
+      <div class="dist-info">
+        <div class="dist-ticker">${p.ticker}</div>
+        <div class="dist-sector">${p.sector}</div>
+      </div>
+      <div class="dist-val">
+        <div class="dist-pct">${tVal2?(p.value/tVal2*100).toFixed(1):'—'}%</div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${$fn(p.value)}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Holdings ────────────────────────────────────────────────────────────────────
+function renderHoldings(tVal, tCost, tPnl, tDay, tDayP) {
+  const body = document.getElementById('holdingsBody');
+  const foot = document.getElementById('holdingsFoot');
+  body.innerHTML = pos.map(p => {
+    const alloc   = tVal ? (p.value/tVal*100).toFixed(1) : '—';
+    const stopCls = p.stopNear ? 'stop-danger' : p.distStop < 8 ? 'stop-warn' : 'stop-ok';
+    const entryDisplay = p.entry ? `$${p.entry.toFixed(2)}` : '—';
+    const sharesDisplay = p.shares ? p.shares.toFixed(4) : '—';
+    return `<tr>
+      <td>
+        <span class="ticker-chip" style="background:${p.color}22;color:${p.color};border:1px solid ${p.color}44">${p.ticker}</span>
+        <div class="sector-tag">${p.sector}</div>
+      </td>
+      <td class="mono">${alloc}%</td>
+      <td class="mono">${sharesDisplay}</td>
+      <td class="mono">${entryDisplay}</td>
+      <td class="mono">${$fn(p.costBasis)}</td>
+      <td><span class="${cc(p.pnlUSD)}">${$f(p.pnlUSD)}</span><br><span style="font-size:10px;font-family:var(--font-mono)" class="${cc(p.pnlPct)}">${pct(p.pnlPct)}</span></td>
+      <td><span class="${cc(p.dayChgPct)}">${p.dayChgPct>=0?'+':''}${p.dayChgPct.toFixed(2)}%</span></td>
+      <td><span class="${stopCls}" style="font-family:var(--font-mono);font-size:10px">$${p.stopLevel.toFixed(2)}<br>${p.distStop.toFixed(1)}% away</span></td>
+    </tr>`;
+  }).join('');
+  const tPnlP = tCost ? tPnl/tCost*100 : 0;
+  foot.innerHTML = `<tr class="totals-row">
+    <td>TOTAL</td>
+    <td class="mono">100%</td>
+    <td></td><td></td>
+    <td class="mono">${$fn(tCost)}</td>
+    <td><span class="${cc(tPnl)}">${$f(tPnl)}</span><br><span style="font-size:10px;font-family:var(--font-mono)" class="${cc(tPnl)}">${pct(tPnlP)}</span></td>
+    <td><span class="${cc(tDay)}">${tDay>=0?'+':''}${(tDayP).toFixed(2)}%</span></td>
+    <td></td>
+  </tr>`;
+}
+
+// ── Transactions ────────────────────────────────────────────────────────────────
+function renderTransactions() {
+  const list = document.getElementById('txList');
+  if (!pos.length) {
+    list.innerHTML=`<div class="tx-row"><span style="font-family:var(--font-mono);font-size:11px;color:var(--muted)">Sin posiciones — verifica Alpaca.</span></div>`;
+    return;
+  }
+  const openTxs = pos.map(p => ({
+    ticker: p.ticker, side: 'BUY', qty: p.shares,
+    price: p.entry, total: p.entry * p.shares, date: ENTRY_DATE,
+  }));
+  list.innerHTML = openTxs.map(tx=>`
+    <div class="tx-row">
+      <span class="tx-side tx-buy">BUY</span>
+      <div class="tx-info">
+        <div class="tx-ticker">${tx.ticker}</div>
+        <div class="tx-detail">${tx.qty.toFixed(4)} shares @ $${tx.price.toFixed(2)}</div>
+      </div>
+      <div class="tx-val pos">+${$fn(tx.total)}</div>
+      <div class="tx-date">${tx.date}</div>
+    </div>`).join('');
+}
+
+// ── Analysis ────────────────────────────────────────────────────────────────────
+function renderAnalysis(tVal, tPnl) {
+  // Performance bars
+  const maxAbs = Math.max(...pos.map(p=>Math.abs(p.pnlPct)),0.01);
+  document.getElementById('perfBars').innerHTML = [...pos]
+    .sort((a,b)=>b.pnlPct-a.pnlPct)
+    .map(p=>`<div class="perf-row">
+      <span class="perf-ticker" style="color:${p.color}">${p.ticker}</span>
+      <div class="perf-bar-wrap">
+        <div class="perf-bar" style="width:${Math.abs(p.pnlPct)/maxAbs*100}%;background:${p.pnlPct>=0?'var(--green)':'var(--red)'}"></div>
+      </div>
+      <span class="perf-val ${cc(p.pnlPct)}">${pct(p.pnlPct)}</span>
+    </div>`).join('');
+
+  // Risk cards
+  const risks = [
+    { name:'Concentración Sector',     note:'4 empresas, mismo sector macro',  level:65, desc:'Correlación alta: todos caen en corte presupuestario. Mitigado por sub-sectores distintos (misiles/drones/plataformas/space).' },
+    { name:'Riesgo Presupuestario EE.UU.', note:'CR / secuestro fiscal',       level:45, desc:'Un continuing resolution o secuestro presupuestario puede pausar nuevos contratos. Histórico: impacto 6-18 meses, luego recuperación.' },
+    { name:'KTOS Small-Cap',            note:'~$3B mkt cap · alta volatilidad', level:70, desc:'Mayor beta. Stop −18% para dar margen. Dependiente de contratos DoD. Si el mercado cae 15%, KTOS puede caer 25-30%.' },
+    { name:'Riesgo Paz / Ceasefire',    note:'Múltiples frentes activos',       level:30, desc:'Impacto parcial: múltiples guerras activas. Post-conflicto: ciclo reposición 2-3 años. Tesis se mantiene en escenario de paz.' },
+  ];
+  document.getElementById('riskCards').innerHTML = risks.map(r=>`
+    <div class="risk-card">
+      <div class="risk-name">${r.name}</div>
+      <div class="risk-note">${r.note}</div>
+      <div class="risk-bar-wrap"><div class="risk-bar-fill" style="width:${r.level}%"></div></div>
+      <div class="risk-marker-row"><span>Bajo</span><span>Medio</span><span>Alto</span></div>
+      <div style="font-family:var(--font-display);font-size:11px;color:rgba(255,255,255,0.75);margin-top:10px;line-height:1.6">${r.desc}</div>
+    </div>`).join('');
+
+  // P&L bar chart
+  if (charts.pnl) charts.pnl.destroy();
+  charts.pnl = new Chart(document.getElementById('pnlChart'), {
+    type:'bar',
+    data:{labels:pos.map(p=>p.ticker),datasets:[{data:pos.map(p=>+p.pnlUSD.toFixed(2)),backgroundColor:pos.map(p=>p.pnlUSD>=0?'rgba(34,211,160,0.7)':'rgba(240,94,93,0.7)'),borderColor:pos.map(p=>p.pnlUSD>=0?'#22d3a0':'#f05e5d'),borderWidth:1,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`P&L: ${$f(c.parsed.y)}`}}},scales:{x:{ticks:{color:'rgba(255,255,255,0.75)',font:{size:11,family:'Source Code Pro'}},grid:{display:false}},y:{ticks:{color:'rgba(255,255,255,0.75)',font:{size:10,family:'Source Code Pro'},callback:v=>'$'+v.toFixed(0)},grid:{color:'rgba(79,142,247,0.08)'}}}}
+  });
+
+  // Daily change chart
+  if (charts.day) charts.day.destroy();
+  charts.day = new Chart(document.getElementById('dayChart'), {
+    type:'bar',
+    data:{labels:pos.map(p=>p.ticker),datasets:[{data:pos.map(p=>+p.dayChgPct.toFixed(3)),backgroundColor:pos.map(p=>p.dayChgPct>=0?'rgba(34,211,160,0.6)':'rgba(240,94,93,0.6)'),borderColor:pos.map(p=>p.dayChgPct>=0?'#22d3a0':'#f05e5d'),borderWidth:1,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`Day: ${c.parsed.y>=0?'+':''}${c.parsed.y.toFixed(2)}%`}}},scales:{x:{ticks:{color:'rgba(255,255,255,0.75)',font:{size:11,family:'Source Code Pro'}},grid:{display:false}},y:{ticks:{color:'rgba(255,255,255,0.75)',font:{size:10,family:'Source Code Pro'},callback:v=>(v>=0?'+':'')+v.toFixed(2)+'%'},grid:{color:'rgba(79,142,247,0.08)'}}}}
+  });
+}
+
+// ── Tab switcher ────────────────────────────────────────────────────────────────
+function sw(id, el) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  el.classList.add('active');
+}
+
+// ── Init ────────────────────────────────────────────────────────────────────────
+loadHistory().then(() => loadData());
+setInterval(loadData, 60000);
+</script>
+</body>
+</html>

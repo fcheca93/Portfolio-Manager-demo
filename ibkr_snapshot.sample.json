@@ -1,0 +1,87 @@
+{
+  "_note": "SAMPLE DATA - fictional tickers and numbers for demo purposes only.",
+  "ok": true,
+  "generated_at": "2026-01-01T00:00:00Z",
+  "account": "UXXXXXXX",
+  "open_positions": [
+    {
+      "ticker": "DEMOA",
+      "qty": 100.0,
+      "avg_entry": 50.0,
+      "current_price": 55.0,
+      "market_value": 0.0,
+      "unrealized_pnl": 500.0,
+      "invested": 5000.0,
+      "currency": "EUR",
+      "fx_rate": 1.0
+    },
+    {
+      "ticker": "DEMOB",
+      "qty": 200.0,
+      "avg_entry": 20.0,
+      "current_price": 18.0,
+      "market_value": 0.0,
+      "unrealized_pnl": -400.0,
+      "invested": 4000.0,
+      "currency": "EUR",
+      "fx_rate": 1.0
+    }
+  ],
+  "trades": [
+    {
+      "ticker": "DEMOC",
+      "date": "2025-11-03",
+      "qty": 100.0,
+      "price": 10.0,
+      "net_cash": -1000.0,
+      "realized_pnl": 0.0,
+      "commission": 0.0
+    },
+    {
+      "ticker": "DEMOC",
+      "date": "2025-11-17",
+      "qty": -100.0,
+      "price": 11.0,
+      "net_cash": 1100.0,
+      "realized_pnl": 100.0,
+      "commission": 0.0
+    },
+    {
+      "ticker": "DEMOD",
+      "date": "2025-12-01",
+      "qty": 50.0,
+      "price": 40.0,
+      "net_cash": -2000.0,
+      "realized_pnl": 0.0,
+      "commission": 0.0
+    },
+    {
+      "ticker": "DEMOD",
+      "date": "2025-12-15",
+      "qty": -50.0,
+      "price": 38.0,
+      "net_cash": 1900.0,
+      "realized_pnl": -100.0,
+      "commission": 0.0
+    },
+    {
+      "ticker": "DEMOA",
+      "date": "2025-12-20",
+      "qty": 100.0,
+      "price": 50.0,
+      "net_cash": -5000.0,
+      "realized_pnl": 0.0,
+      "commission": 0.0
+    },
+    {
+      "ticker": "DEMOB",
+      "date": "2025-12-22",
+      "qty": 200.0,
+      "price": 20.0,
+      "net_cash": -4000.0,
+      "realized_pnl": 0.0,
+      "commission": 0.0
+    }
+  ],
+  "cash": 100.0
+}

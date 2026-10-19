@@ -1,0 +1,44 @@
+name: Defense & Aerospace — Open Portfolio
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (simulate without executing orders)"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+jobs:
+  open:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Open Defense & Aerospace positions
+        env:
+          PORTFOLIO_ID:      defense_aerospace
+          ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY_DEFENSE }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY_DEFENSE }}
+          FINNHUB_API_KEY:   ${{ secrets.FINNHUB_API_KEY }}
+          TELEGRAM_TOKEN:    ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID:  ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python open_portfolio_defense.py --dry-run
+          else
+            python open_portfolio_defense.py
+          fi

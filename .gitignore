@@ -1,0 +1,8 @@
+.env
+*.env
+__pycache__/
+*.pyc
+# real broker data must never be committed to a public repo
+ibkr_snapshot.json
+context.json
+state.json
